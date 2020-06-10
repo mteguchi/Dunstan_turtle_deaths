@@ -20,24 +20,75 @@ library(bayesplot)
 #source("Dunstan_functions.R")
 
 col.def <- cols(Date = col_date(format = "%m/%d/%Y"),
-                Counts_100m = col_double(),
-                Season = col_integer(),
-                Sector = col_character())
+                Heat = col_integer(),
+                Cliff = col_integer(),
+                Total = col_integer())
 
-data.1 <- read_csv(file = "data/Hatchling_Data_v2.csv",
-                   col_types = col.def)
+# Begin and end dates for each season
+Day.begin <- "10-15"
+Day.end <- "04-30"
+# define nesting seasons - not the same as calendar years
+# also define day of season, starts on 10-15
 
-# These two need to be changed when different runs are used
-Day1 <- "12-20"
-Day2 <- "04-30"
+data.1 <- read_csv(file = "data/Turtle_deaths_with_zeros.csv",
+                   col_types = col.def) %>% 
+  mutate(Year = year(Date),
+         DOY = yday(Date),
+         Season = ifelse(Date >= paste0(Year, "-", Day.end), 
+                         Year, Year-1),
+         DOS = as.numeric(Date - as.Date(paste0(Season, "-", Day.begin)))) 
 
-n.days <- as.numeric(as.Date(paste0("2018-", Day2)) - as.Date(paste0("2017-", Day1)))
-
-seasons <- unique(data.1$Season)
-
-data.1 %>% mutate(DOSeason = as.numeric(Date - as.Date(paste0(Season, "-", Day1)))) -> data.3
 ```
 
+Take a look at data first. Time series of heat-caused deaths:
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = Date, y = Heat))
+
+
+# n.days <- as.numeric(as.Date(paste0("2018-", Day2)) - as.Date(paste0("2017-", Day1)))
+# 
+# seasons <- unique(data.1$Season)
+# 
+# data.1 %>% mutate(DOSeason = as.numeric(Date - as.Date(paste0(Season, "-", Day1)))) -> data.3
+```
+
+Time series of cliff fall
+
+```{r}
+ggplot(data = data.1) +
+  geom_point(aes(x = Date, y = Cliff))
+```
+
+Cliff fall vs. heat caused deaths
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = Heat, y = Cliff))
+```
+
+No correlation between heat and cliff.
+
+Look at each year separately:
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, 
+                 y = Heat, 
+                 color = as.factor(Season))) 
+
+```
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, 
+                 y = (Heat))) + 
+  facet_wrap(. ~ Season)
+
+```
+
+Not much signal there... 
 
 # Modified Richards equation by Girondot et al. (2007)
 
