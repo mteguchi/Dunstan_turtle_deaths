@@ -1,0 +1,64 @@
+# JAGS model for imputing missing hatchling counts at Raine Island
+
+# The known cyclical nature of hatching is modeled by the discrete 
+# Fourier series of one period per year.  Hatchling production starts
+# December 20 and ends April 30 each season.  Observed counts are 
+# limited so they are used to determine amplitude of each season
+# and for each sector.  Amplitudes for sectors are correlated.
+
+model{
+    # Initial states
+    X0 ~ dmnorm.vcov(X0.mu, X0.vcov)    # provide X0.mu (vector) and X0.vcov (array) through jags.data
+
+    predX[1:n.sectors,1] <- c[day[1]] + X0  # day 1 should be 12/21
+
+    X[1:n.sectors,1] ~ dmnorm.vcov(predX[,1], cov.X[1:n.sectors, 1:n.sectors])
+
+    # observation
+    y[1:n.sectors,1] ~  dmnorm.vcov(X[,1], cov.y[1:n.sectors, 1:n.sectors])
+                
+    for (t in 2:n.steps){
+        # state
+        predX[1:n.sectors,t] <-  c[day[t]] + X[1:n.sectors, t-1]
+        X[1:n.sectors, t] ~ dmnorm.vcov(predX[1:n.sectors,t], cov.X[1:n.sectors, 1:n.sectors])
+
+        # observation
+        y[1:n.sectors,t] ~  dmnorm.vcov(X[1:n.sectors,t], cov.y[1:n.sectors, 1:n.sectors])
+                
+    }
+       
+    # c parameter defined here with a discrete Fourier function
+    # n.days = from 12/21 to 4/30. Provide it through jags.data
+    # also provide period (should be same as n.days) through jags.data
+
+    for (d in 1:n.days){
+        c.const[d] <-  2 * pi * d / period
+        c[d] <- beta.cos * cos(c.const[d]) + beta.sin * sin(c.const[d])
+    }
+    
+    # priors
+    beta.cos ~ dnorm(0, 1)
+    beta.sin ~ dnorm(0, 1)
+
+    # these should be covariance matrices. 
+    for (j in 1:n.sectors){
+        # diagonal first
+        sigma.y[j, j] ~ dgamma(2, 0.5)
+        cov.y[j, j] <- (sigma.y[j, j] * sigma.y[j, j])
+
+        # sigma.X is the SD of the process (X)
+        sigma.X[j, j] ~ dgamma(2, 0.5)
+        cov.X[j, j] <- (sigma.X[j, j] * sigma.X[j, j])    
+        
+        # then off diagonal
+        for (k in (j+1):n.sectors){
+           cov.y[j, k] <- sigma.y[j,j] * sigma.y[k,k] 
+           cov.X[j, k] <- sigma.X[j,j] * sigma.X[k,k]
+           cov.y[k, j] <- cov.y[j,k]
+           cov.X[k, j] <- cov.X[j,k]
+        }
+    }
+    
+    
+
+}
