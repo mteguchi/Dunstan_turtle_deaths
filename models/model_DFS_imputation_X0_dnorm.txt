@@ -1,10 +1,11 @@
-# JAGS model for imputing missing hatchling counts at Raine Island
+# JAGS model for imputing missing dead turtle counts at Raine Island
 
-# The known cyclical nature of hatching is modeled by the discrete 
-# Fourier series of one period per year.  Hatchling production starts
-# December 20 and ends April 30 each season.  Observed counts are 
+# The known cyclical nature of turtle deaths is modeled by the discrete 
+# Fourier series of one period per year.  Turtle deaths start
+# October 15 and end April 30 each season.  Observed counts are 
 # limited so they are used to determine amplitude of each season
-# and for each sector.  Amplitudes for sectors are correlated.
+# and for each sector.  Amplitudes for heat-related and cliff-fall deaths
+# are correlated.
 
 # First, tried with mvnorm but jags does not allow partially missing observations
 # in mvnorm. So, changing it to five separate normals but a common slope

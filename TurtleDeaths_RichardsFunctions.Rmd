@@ -65,10 +65,10 @@ Cliff fall vs. heat caused deaths
 
 ```{r}
 ggplot(data = data.1) + 
-  geom_point(aes(x = Heat, y = Cliff))
+  geom_point(aes(x = (Heat), y = (Cliff)))
 ```
 
-No correlation between heat and cliff.
+No obvious correlation between heat and cliff.
 
 Look at each year separately:
 
