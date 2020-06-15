@@ -73,12 +73,12 @@ jags.data <- list(y = log(obs.y + 1),
 
 jags.params <- c("beta.cos", "beta.sin",
                  #"sigma.X", 
-                 "sigma.heat.y", "sigma.cliff.y", 
+                 "sigma.heat.y", "sigma.cliff.y", "rho",
                  "y", "X", "deviance")
 
-MCMC.params <- list(n.chains = 3,
-                    n.samples = 100000,
-                    n.burnin = 80000,
+MCMC.params <- list(n.chains = 4,
+                    n.samples = 50000,
+                    n.burnin = 10000,
                     n.thin = 5)
 
 
@@ -93,10 +93,10 @@ if (!file.exists(paste0("RData/DFS_X0_imputation_mvnorm_", Day.begin, "_", Day.e
              n.iter = MCMC.params$n.samples,
              DIC = T, parallel=T)
   
-  saveRDS(jm, paste0("RData/Fourier_X0_imputation_dnorm_", Day1, "_", Day2, ".rds"))
+  saveRDS(jm, paste0("RData/DFS_X0_imputation_mvnorm_", Day.begin, "_", Day.end, ".rds"))
   
 } else {
-  jm <- readRDS(paste0("RData/Fourier_X0_imputation_dnorm_", Day1, "_", Day2, ".rds"))
+  jm <- readRDS(paste0("RData/DFS_X0_imputation_mvnorm_", Day.begin, "_", Day.end, ".rds"))
 }
 
 

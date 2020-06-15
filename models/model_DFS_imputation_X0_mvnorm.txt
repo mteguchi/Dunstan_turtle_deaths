@@ -27,7 +27,7 @@ model{
            X[yr, 1:2, t] <-  c[day[t]] + X[yr, 1:2, t-1]
 
            # observation
-           y[yr, 1:2, t] ~ dnorm(X[yr, 1:2, t], tau.y)
+           y[yr, 1:2, t] ~ dmnorm(X[yr, 1:2, t], tau.y)
                 
         }
     }
@@ -46,13 +46,15 @@ model{
   beta.sin ~ dnorm(0, 1)
   
   #tau.y ~ dwish(R.y, k.y)
-  sigma.heat.y ~ dgamma(1, 0.1)
-  sigma.cliff.y ~ dgamma(1, 0.1)
+
+  sigma.heat.y ~ dgamma(3, 0.1)
+  sigma.cliff.y ~ dgamma(3, 0.1)
+  rho ~ dunif(-1, 1)
   Omega.y[1,1] <- sigma.heat.y * sigma.heat.y
   Omega.y[2,2] <- sigma.cliff.y * sigma.cliff.y
-  Omega.y[1,2] <- sigma.heat.y * sigma.cliff.y
-  Omega.y[2,1] <- sigma.heat.y * sigma.cliff.y
-  
+  Omega.y[1,2] <- rho * sigma.heat.y * sigma.cliff.y
+  Omega.y[2,1] <- rho * sigma.heat.y * sigma.cliff.y
   tau.y <- inverse(Omega.y)
 
+  #Omega.y <- inverse(tau.y)
 }
