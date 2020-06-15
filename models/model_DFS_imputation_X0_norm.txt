@@ -7,7 +7,7 @@
 # and for each sector.  Amplitudes for heat-related and cliff-fall deaths
 # are correlated.
 
-# Bivariate normal distribution is used between the two causes of deaths. 
+# Single variable normal distribution is used for each cause of death. 
 
 model{
 
@@ -20,14 +20,16 @@ model{
       X[yr, 1:2, 1] <- c[day[1]] + X0[yr, 1:2]  # day 1 should be 10/15
 
       # observation
-      y[yr, 1:2, 1] ~  dmnorm(X[yr,1:2, 1], tau.y)
+      y[yr, 1, 1] ~  dnorm(X[yr, 1, 1], tau.y.heat)
+      y[yr, 2, 1] ~  dnorm(X[yr, 2, 1], tau.y.cliff)
 
       for (t in 2:n.days){
            # state
            X[yr, 1:2, t] <-  c[day[t]] + X[yr, 1:2, t-1]
 
            # observation
-           y[yr, 1:2, t] ~ dmnorm(X[yr, 1:2, t], tau.y)
+           y[yr, 1, t] ~ dmnorm(X[yr, 1, t], tau.y.heat)
+           y[yr, 2, t] ~ dmnorm(X[yr, 2, t], tau.y.cliff)
                 
         }
     }
@@ -47,14 +49,17 @@ model{
   
   #tau.y ~ dwish(R.y, k.y)
 
-  sigma.heat.y ~ dgamma(3, 0.1)
-  sigma.cliff.y ~ dgamma(3, 0.1)
-  rho ~ dunif(-1, 1)
-  Omega.y[1,1] <- sigma.heat.y * sigma.heat.y
-  Omega.y[2,2] <- sigma.cliff.y * sigma.cliff.y
-  Omega.y[1,2] <- rho * sigma.heat.y * sigma.cliff.y
-  Omega.y[2,1] <- rho * sigma.heat.y * sigma.cliff.y
-  tau.y <- inverse(Omega.y)
+  sigma.y.heat ~ dgamma(3, 0.1)
+  tau.y.heat <- 1/(sigma.y.heat * sigma.y.heat)
+  sigma.y.cliff ~ dgamma(3, 0.1)
+  tau.y.cliff <- 1/(sigma.y.cliff * sigma.y.cliff)
+  
+  #rho ~ dunif(-1, 1)
+  #Omega.y[1,1] <- sigma.heat.y * sigma.heat.y
+  #Omega.y[2,2] <- sigma.cliff.y * sigma.cliff.y
+  #Omega.y[1,2] <- rho * sigma.heat.y * sigma.cliff.y
+  #Omega.y[2,1] <- rho * sigma.heat.y * sigma.cliff.y
+  #tau.y <- inverse(Omega.y)
 
   #Omega.y <- inverse(tau.y)
 }
