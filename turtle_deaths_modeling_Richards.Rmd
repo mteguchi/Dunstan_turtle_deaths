@@ -21,15 +21,15 @@ min = 0.
 
 Observed counts of deaths are assumed to be normally distributed around this function.
 
-I created six variants of this function by making different assumptions.
-Model 1: 
-# In this modified version, there are two K values: K1 and K2. The M1 and
-# M2 above are modified as follows:
-#
-# M1 <- (1 + (2 * exp(K1) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K1))
-# M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S) * (P - d))) ^ (-1/exp(K2))
-#
-# The parameter S is time dependent, whereas K is fixed over time.
+I created six variants of this function by making different assumptions about S and K parameters.
+Model 1: S and K are constants (S_K)
+Model 2: S is season dependent, whereas K is constant (St_K)
+Model 3: S is constant and K for M1 and M2 are different but season independent (S_K1_K2)
+Model 4: S is season dependent and K for M1 and M2 are different but season independent (St_K1_K2)
+Model 5: absolute values of S and S1 are not the same (creates a non-symmetrical function), whereas K is constant (S1_S2_K)
+Model 6: absolute values of S and S1 are not the same and K for M1 and M2 are different but season independent (S1_S2_K1_K2)
+
+Varying K by season resulted in non-convergence. Consequently, time dependent K models were not considered. 
 
 Girondot et al. (2007): Modeling approaches to quantify leatherback nesting trends in French Guiana and Suriname. Chelonian Conservation and Biology 6(1): 37-46.
 
@@ -46,7 +46,7 @@ library(bayesplot)
 source("Dunstan_functions.R")
 ```
 
-Get the data. Then, create a dataframe containing complete season (DOSeason from 0 to 131) for each season. 
+Get the data. Then, create a dataframe and create Season and Day of Season (DOS) variables.  
 
 ```{r}
 col.def <- cols(Date = col_date(format = "%m/%d/%Y"),
@@ -92,23 +92,6 @@ for (i in 1:length(seasons)){
   
 }
 
-MCMC.params <- list(n.chains = 4,
-                    n.samples = 50000,
-                    n.burnin = 10000,
-                    n.thin = 5)
-
-```
-
-I have a tentative model that uses discrete a Fourier series with normal observation models to impute missing data.  Send these data to jags to fit the model. The DFS model crashes the computer... I think the data are just too sparse. 
-
-Next... try the modified Richards function provided in Girondot et al. (2007).
-Try first with non-log counts as it was done in their paper. Change the data format a little so that we are not "imputing" but estimating the parameters of the functions from data.
-
-First, I fit the function to each cause of death separately. I first made K and S to vary among seasons. Some parameters didn't converge. So, I fixed K to be constant over seasons (flatness at the max value). Max values are different among seasons. 
-
-# Heat related deaths
-
-```{r}
 n.seasons <- length(unique(data.1$Season))
 max.days <- data.1 %>% 
   group_by(Season.f) %>% 
@@ -146,36 +129,151 @@ for (season_idx in 1:n.seasons){
   }
 }
 
-# first just run one at a time
+
+```
+
+Because no obvious correlation between heat-related and cliff fall deaths, I fit the functions to each cause of death separately. 
+
+Set MCMC parameters
+
+```{r}
+MCMC.params <- list(n.chains = 4,
+                    n.samples = 50000,
+                    n.burnin = 10000,
+                    n.thin = 5)
+
+
+```
+
+
+# Heat related deaths
+
+```{r}
+
 jags.data.Heat <- list(y = (obs.y.1[,,1]),
                        t = obs.t,
                        P = P,
                        n.vec = n.vec,
                        n.seasons = n.seasons,
                        max.vec = max.mat[,1])
-# 
+
 jags.params <- c("sigma.y", "S", "K", "max",
                  "y", "X", "sigma.max", "deviance", "loglik")
-# 
 
-if (!file.exists(paste0("RData/Richards_Heat_St_K_norm.rds"))){ 
-  jm.1.Heat <- jags(jags.data.Heat,
+
+if (!file.exists(paste0("RData/Richards_Heat_S_K_norm.rds"))){
+  M1.Heat <- jags(jags.data.Heat,
              inits = NULL,
              parameters.to.save= jags.params,
-             model.file = 'models/model_Richards_St_K_norm.txt',
+             model.file = 'models/model_Richards_S_K_norm.txt',
              n.chains = MCMC.params$n.chains,
              n.burnin = MCMC.params$n.burnin,
              n.thin = MCMC.params$n.thin,
              n.iter = MCMC.params$n.samples,
              DIC = T, parallel=T)
   
-  saveRDS(jm.1.Heat, paste0("RData/Richards_Heat_St_K_norm.rds"))
+  saveRDS(M1.Heat, paste0("RData/Richards_Heat_S_K_norm.rds"))
   
 } else {
-  jm.1.Heat <- readRDS(paste0("RData/Richards_Heat_St_K_norm.rds"))
+  M1.Heat <- readRDS(paste0("RData/Richards_Heat_S_K_norm.rds"))
 }
 
-#mcmc_trace(jm.1.Heat$samples, c("sigma.y", "sigma.max"))
+
+if (!file.exists(paste0("RData/Richards_Heat_St_K_norm.rds"))){ 
+  M2.Heat <- jags(jags.data.Heat,
+                    inits = NULL,
+                    parameters.to.save= jags.params,
+                    model.file = 'models/model_Richards_St_K_norm.txt',
+                    n.chains = MCMC.params$n.chains,
+                    n.burnin = MCMC.params$n.burnin,
+                    n.thin = MCMC.params$n.thin,
+                    n.iter = MCMC.params$n.samples,
+                    DIC = T, parallel=T)
+  
+  saveRDS(M2.Heat, paste0("RData/Richards_Heat_St_K_norm.rds"))
+  
+} else {
+  M2.Heat <- readRDS(paste0("RData/Richards_Heat_St_K_norm.rds"))
+}
+
+jags.params <- c("sigma.y", "S", "K1", "K2", "max",
+                 "y", "X", "sigma.max", "deviance", "loglik")
+
+if (!file.exists(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))){
+  M3.Heat <- jags(jags.data.Heat,
+                    inits = NULL,
+                    parameters.to.save= jags.params,
+                    model.file = 'models/model_Richards_S_K1_K2_norm.txt',
+                    n.chains = MCMC.params$n.chains,
+                    n.burnin = MCMC.params$n.burnin,
+                    n.thin = MCMC.params$n.thin,
+                    n.iter = MCMC.params$n.samples,
+                    DIC = T, parallel=T)
+  
+  saveRDS(M3.Heat, paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
+  
+} else {
+  M3.Heat <- readRDS(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
+}
+
+if (!file.exists(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))){
+  M4.Heat <- jags(jags.data.Heat,
+                    inits = NULL,
+                    parameters.to.save= jags.params,
+                    model.file = 'models/model_Richards_St_K1_K2_norm.txt',
+                    n.chains = MCMC.params$n.chains,
+                    n.burnin = MCMC.params$n.burnin,
+                    n.thin = MCMC.params$n.thin,
+                    n.iter = MCMC.params$n.samples,
+                    DIC = T, parallel=T)
+  
+  saveRDS(M4.Heat, paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
+  
+} else {
+  M4.Heat <- readRDS(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
+}
+
+jags.params <- c("sigma.y", "S1", "S2", "K", "max",
+                 "y", "X", "sigma.max", "deviance", "loglik")
+
+if (!file.exists(paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))){
+  M5.Heat <- jags(jags.data.Heat,
+                  inits = NULL,
+                  parameters.to.save= jags.params,
+                  model.file = 'models/model_Richards_S1_S2_K_norm.txt',
+                  n.chains = MCMC.params$n.chains,
+                  n.burnin = MCMC.params$n.burnin,
+                  n.thin = MCMC.params$n.thin,
+                  n.iter = MCMC.params$n.samples,
+                  DIC = T, parallel=T)
+  
+  saveRDS(M5.Heat, paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))
+  
+} else {
+  M5.Heat <- readRDS(paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))
+}
+
+jags.params <- c("sigma.y", "S1", "S2", "K1", "K2", "max",
+                 "y", "X", "sigma.max", "deviance", "loglik")
+
+if (!file.exists(paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))){
+  M6.Heat <- jags(jags.data.Heat,
+                  inits = NULL,
+                  parameters.to.save= jags.params,
+                  model.file = 'models/model_Richards_S1_S2_K1_K2_norm.txt',
+                  n.chains = MCMC.params$n.chains,
+                  n.burnin = MCMC.params$n.burnin,
+                  n.thin = MCMC.params$n.thin,
+                  n.iter = MCMC.params$n.samples,
+                  DIC = T, parallel=T)
+  
+  saveRDS(M6.Heat, paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))
+  
+} else {
+  M6.Heat <- readRDS(paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))
+}
+
+
 
 ```
 
@@ -184,7 +282,7 @@ Seemed to work when using a constant K.
 Let's look at the estimated functions. 
 
 ```{r}
-X_Heat_St_K.df <- compute.summary.stats_St_K(jm.1.Heat$samples, 
+X_Heat_St_K.df <- compute.summary.stats_St_K(M2.Heat$samples, 
                                                seasons, 
                                                max.days$total.days, 
                                                P)
@@ -207,30 +305,13 @@ What if we have only one S:
 
 ```{r}
 
-if (!file.exists(paste0("RData/Richards_Heat_S_K_norm.rds"))){
-  jm.2.Heat <- jags(jags.data.Heat,
-             inits = NULL,
-             parameters.to.save= jags.params,
-             model.file = 'models/model_Richards_S_K_norm.txt',
-             n.chains = MCMC.params$n.chains,
-             n.burnin = MCMC.params$n.burnin,
-             n.thin = MCMC.params$n.thin,
-             n.iter = MCMC.params$n.samples,
-             DIC = T, parallel=T)
-  
-  saveRDS(jm.2.Heat, paste0("RData/Richards_Heat_S_K_norm.rds"))
-  
-} else {
-  jm.2.Heat <- readRDS(paste0("RData/Richards_Heat_S_K_norm.rds"))
-}
-
-#mcmc_trace(jm.2.Heat$samples, c("sigma.y", "sigma.max"))
+#mcmc_trace(M1.Heat$samples, c("sigma.y", "sigma.max"))
 
 ```
 
 
 ```{r}
-X_Heat_S_K.df <- compute.summary.stats_S_K(samples = jm.2.Heat$samples, 
+X_Heat_S_K.df <- compute.summary.stats_S_K(samples = M1.Heat$samples, 
                                            seasons = seasons, 
                                            max.days = max.days$total.days, 
                                            P = P)
@@ -342,54 +423,19 @@ I created a modified version of the function by Girondot et al. In this model, I
 
 # Heat with the new model
 ```{r}
-jags.params <- c("sigma.y", "S", "K1", "K2", "max",
-                 "y", "X", "sigma.max", "deviance", "loglik")
 
-if (!file.exists(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))){
-  jm.3.Heat <- jags(jags.data.Heat,
-                    inits = NULL,
-                    parameters.to.save= jags.params,
-                    model.file = 'models/model_Richards_St_K1_K2_norm.txt',
-                    n.chains = MCMC.params$n.chains,
-                    n.burnin = MCMC.params$n.burnin,
-                    n.thin = MCMC.params$n.thin,
-                    n.iter = MCMC.params$n.samples,
-                    DIC = T, parallel=T)
-  
-  saveRDS(jm.3.Heat, paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
-  
-} else {
-  jm.3.Heat <- readRDS(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
-}
-
-if (!file.exists(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))){
-  jm.4.Heat <- jags(jags.data.Heat,
-                    inits = NULL,
-                    parameters.to.save= jags.params,
-                    model.file = 'models/model_Richards_S_K1_K2_norm.txt',
-                    n.chains = MCMC.params$n.chains,
-                    n.burnin = MCMC.params$n.burnin,
-                    n.thin = MCMC.params$n.thin,
-                    n.iter = MCMC.params$n.samples,
-                    DIC = T, parallel=T)
-  
-  saveRDS(jm.4.Heat, paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
-  
-} else {
-  jm.4.Heat <- readRDS(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
-}
 
 ```
 
 
 
 ```{r}
-X_Heat_St_K1_K2.df <- compute.summary.stats_St_K1_K2(samples = jm.3.Heat$samples, 
+X_Heat_St_K1_K2.df <- compute.summary.stats_St_K1_K2(samples = M4.Heat$samples, 
                                                      seasons = seasons, 
                                                      max.days = max.days$total.days, 
                                                      P = P)
 
-X_Heat_S_K1_K2.df <- compute.summary.stats_S_K1_K2(samples = jm.4.Heat$samples, 
+X_Heat_S_K1_K2.df <- compute.summary.stats_S_K1_K2(samples = M3.Heat$samples, 
                                            seasons = seasons, 
                                            max.days = max.days$total.days, 
                                            P = P)
@@ -423,7 +469,7 @@ ggplot() +
 ```
 
 ```{r}
-c(jm.1.Heat$DIC, jm.2.Heat$DIC, jm.3.Heat$DIC, jm.4.Heat$DIC)
+c(M2.Heat$DIC, M1.Heat$DIC, M4.Heat$DIC, M3.Heat$DIC)
 ```
 
 

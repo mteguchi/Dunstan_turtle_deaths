@@ -1,6 +1,5 @@
 # why is this script not showing up on Git?
 
-
 Girondot_fcn <- function(d, S, K, P, min, max){
   K <- abs(K)
   S <- abs(S)
@@ -18,6 +17,28 @@ Girondot_fcn_2 <- function(d, S, K1, K2, P, min, max){
   S1 <- -S
   M1 <- (1 + (2 * exp(K1) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K1))
   M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S) * (P - d))) ^ (-1/exp(K2))
+  N <- min + (max - min) * (M1 * M2)
+  return(N)
+}
+
+Girondot_fcn_3 <- function(d, S1, S2, K, P, min, max){
+  K <- abs(K)
+  S1 <- abs(S1)
+  S1 <- -S1
+  S2 <- abs(S2)
+  M1 <- (1 + (2 * exp(K) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K))
+  M2 <- (1 + (2 * exp(K) - 1) * exp((1/S2) * (P - d))) ^ (-1/exp(K))
+  N <- min + (max - min) * (M1 * M2)
+  return(N)
+}
+
+Girondot_fcn_4 <- function(d, S1, S2, K1, K2, P, min, max){
+  K <- abs(K)
+  S1 <- abs(S1)
+  S1 <- -S1
+  S2 <- abs(S2)
+  M1 <- (1 + (2 * exp(K) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K1))
+  M2 <- (1 + (2 * exp(K) - 1) * exp((1/S2) * (P - d))) ^ (-1/exp(K2))
   N <- min + (max - min) * (M1 * M2)
   return(N)
 }

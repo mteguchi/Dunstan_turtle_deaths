@@ -1,7 +1,6 @@
 # JAGS model for estimating the number of total deaths from heat exhaustion and cliff falls at Raine Island
 
-# The increase in cumulative countsknown cyclical nature of hatching is modeled by 
-# a modified version of the function
+# The assumed cyclical nature of turtle deaths is modeled by the function
 # provided in Girondot et al. (2007): Modeling approaches to quantify
 # leatherback nesting trends in French Guiana and Suriname. Chelonian
 # Conservation and Biology 6(1): 37-46.
@@ -16,18 +15,21 @@
 # S > 0 and S1 = -S define the "fatness" of the function
 # K > 0 defines the "flatness" at the peak of the function
 # P defines where the peak is relatvie to the range of d min(d) < P < max(d).
-# For this analysis, I set this to the middle of the season, that is 
-# P = (max(d) - min(d))/2 because of not enough data to estimate this parameter.
+# For this analysis, I set P to the middle of the season, that is 
+# P = floor((max(d) - min(d))/2) because there is not enough data to 
+# estimate this parameter.
 # P needs to be provided through data.
 # min = 0.
 #
 # Observed counts are assumed to be normally distributed around this function.
 # 
-# In this modified version, there are two K values: K1 and K2:
+# In this modified version, there are two K values: K1 and K2. The M1 and
+# M2 above are modified as follows:
+#
 # M1 <- (1 + (2 * exp(K1) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K1))
 # M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S) * (P - d))) ^ (-1/exp(K2))
 #
-# In this model, the parameter S is time dependent, whereas K is fixed over time.
+# The parameter S is time dependent, whereas K is fixed over time.
 
 model{
 
@@ -40,8 +42,8 @@ model{
             
       # observation
       y[i, j] ~ dnorm(X[i, j], tau.y)
-                
-      
+      loglik[i,j] <- logdensity.norm(y[i,j], X[i,j], tau.y)          
+                      
     }
   }  
 
