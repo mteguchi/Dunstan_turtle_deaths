@@ -14,42 +14,43 @@
 # d is the number of days from the beginning of nesting season
 # S > 0 and S1 = -S define the "fatness" of the function
 # K > 0 defines the "flatness" at the peak of the function
-# P defines where the peak is relatvie to the range of d min(d) < P < max(d)
-# min is "the basal level of nesting outside the nesting season"
-# max > min
+# P defines where the peak is relatvie to the range of d min(d) < P < max(d).
+# For this analysis, I set this to the middle of the season, that is 
+# P = (max(d) - min(d))/2 because of not enough data to estimate this parameter.
+# P needs to be provided through data.
+# min = 0.
 #
 # Observed counts are assumed to be normally distributed around this function.
 
 model{
 
-  for (i in 1:n){
-    for (j in 1:n.vec[i]){
+  for (i in 1:n.seasons){   # year
+    for (j in 1:n.vec[i]){   # days
       # state
-      M1[idx[i,1], idx[i,2], t[i,j]] <- (1 + (2 * exp(K) - 1) * exp((1/(-S)) * (P[idx[i,1]] - t[i,j]))) ^ (-1/exp(K))
-      M2[idx[i,1], idx[i,2], t[i,j]] <- (1 + (2 * exp(K) - 1) * exp((1/S) * (P[idx[i,1]] - t[i,j]))) ^ (-1/exp(K))
-      X[i,j] <- min[idx[i,2]] + (max[idx[i,1], idx[i,2]] - min[idx[i,2]]) * (M1[idx[i,1], idx[i,2], t[i,j]] * M2[idx[i,1], idx[i,2], t[i,j]])
+      M1[i, j] <- (1 + (2 * exp(K) - 1) * exp((1/(-S)) * (P[i] - t[i,j]))) ^ (-1/exp(K))
+      M2[i, j] <- (1 + (2 * exp(K) - 1) * exp((1/S) * (P[i] - t[i,j]))) ^ (-1/exp(K))
+      X[i, j] <-  max[i] * (M1[i, j] * M2[i, j])
             
       # observation
-      y[i, j] ~ dnorm(X[i,j], tau.y)
+      y[i, j] ~ dnorm(X[i, j], tau.y)
                 
       
     }
   }  
 
   # priors
-  for (yr in 1:n.years){
-    for (j in 1:n.sectors){
-      max[yr,j] ~ dnorm(max.mat[yr,j], tau.max)T(min[j],)
-
-    }
-    P[yr] ~ dunif(50, 100)
+  for (yr in 1:n.seasons){
+    max[yr] ~ dnorm(max.vec[yr], tau.max)T(0,)
+    
+    #P[yr] ~ dunif(0, 100)
 
   }
 
-  sigma.max ~ dgamma(1, 0.1)
-  tau.max <- 1/(sigma.max * sigma.max)
   K ~ dnorm(0, 0.01)T(0,)
   S ~ dnorm(0, 0.1)T(0,)
+
+  sigma.max ~ dgamma(5, 0.1)
+  tau.max <- 1/(sigma.max * sigma.max)
 
   sigma.y ~ dgamma(1, 0.1)
   tau.y <- 1/(sigma.y * sigma.y)
