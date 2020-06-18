@@ -178,6 +178,12 @@ jags.parameters <- list(c("sigma.y", "S", "K", "max",
                         c("sigma.y", "S1", "S2", "K1", "K2", "P", "max",
                           "y", "X", "sigma.max", "deviance", "loglik"))
 
+model.setting.list <- list(jags.parameters = jags.parameters,
+                          MCMC.params = MCMC.params,
+                          model.names = model.names)
+
+saveRDS(model.setting.list, file = "RData/model_setting_2020-06-17.rds")
+
 ```
 
 
