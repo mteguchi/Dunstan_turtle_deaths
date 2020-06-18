@@ -172,6 +172,48 @@ compute.summary.stats_St_K1_K2 <- function(samples, seasons, max.days, P){
   return(X_St_K1_K2.df)
 }
 
+compute.summary.stats_St_K1_K2_P <- function(samples, seasons, max.days){
+  n.seasons <- length(seasons)
+  K1 <- extract.samples("K1", samples)   # just one of these
+  K2 <- extract.samples("K2", samples)   # just one of these
+  P <- extract.samples("P", samples)   # just one of these
+  X.low <- X.high <- X.med <- matrix(data = NA, 
+                                     nrow = n.seasons, 
+                                     ncol = max(max.days))
+  i <- j <- 1
+  for (i in 1:n.seasons){   # year
+    max_i <- extract.samples(paste0("max[", i, "]"), samples)
+    S <- extract.samples(paste0("S[", i, "]"), samples)
+    for (j in 1:max.days[i]){   # days
+      # state
+      M1 <- (1 + (2 * exp(K1) - 1) * exp((1/(-S)) * (P - j))) ^ (-1/exp(K1))
+      M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S) * (P - j))) ^ (-1/exp(K2))
+      X <-  max_i * (M1 * M2)
+      
+      X.low[i,j] <- quantile(X, 0.025)
+      X.med[i,j] <- quantile(X, 0.50)      
+      X.high[i,j] <- quantile(X, 0.975)
+      
+    }
+  }  
+  
+  X.low.df <- data.frame(t(X.low)) %>% melt() %>% 
+    transmute(Low = value)
+  X.med.df <- data.frame(t(X.med)) %>% melt() %>%
+    transmute(Med = value) 
+  X.high.df <- data.frame(t(X.high)) %>% melt() %>%
+    transmute(High = value) 
+  
+  X_St_K1_K2_P.df <- data.frame(DOS = rep(seq(1, ncol(X.low)), 
+                                        length.out = n.seasons * ncol(X.low)),
+                              Season = rep(seasons,
+                                           each = ncol(X.low)),
+                              Low = X.low.df$Low,
+                              Med = X.med.df$Med,
+                              High = X.high.df$High)  
+  return(X_St_K1_K2_P.df)
+}
+
 compute.summary.stats_S_K1_K2 <- function(samples, seasons, max.days, P){
   
   K1 <- extract.samples("K1", samples)   # just one of these

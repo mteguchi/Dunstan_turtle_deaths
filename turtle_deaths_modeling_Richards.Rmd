@@ -262,31 +262,48 @@ DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
   arrange(by = DIC)
 ```
 
-Model 4 (St_K1_K2) seems to be the best according to LOOIC and DIC values. Pareto k statistics look okay also...
+Model 10 (St_K1_K2_P) seems to be the best according to LOOIC and DIC values. Pareto k statistics look okay also...
 
 ```{r}
 
-
 best.model.heat.looic <- readRDS(paste0("RData/Richards_Heat_", 
-                                        model.names[[4]], "_norm_LOOIC.rds"))
+                                        model.names[[10]], "_norm_LOOIC.rds"))
 
 pareto_k_table(best.model.heat.looic)
     
 ```
-We'll use Model 4 for computing the total deaths due to the heat related reasons.
+There are some bad data points... but we'll use this model for computing the total deaths due to the heat related reasons.
+
+First, take a look at the convergence of the P parameter.
 
 ```{r}
-best.model.heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[4]], "_norm.rds"))
+best.model.heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[10]], "_norm.rds"))
 
-X_Heat_St_K1_K2.df <- compute.summary.stats_St_K1_K2(best.model.heat$samples, 
-                                                     seasons, 
-                                                     max.days$total.days, 
-                                                     P)
+# According to Rhat statistics, convergence reached for all. 
+
+mcmc_trace(best.model.heat$samples, "P")
+```
+
+Look at the density plot:
+
+```{r}
+mcmc_dens(best.model.heat$samples, "P")
+
+```
+
+I wonder if we need more MCMC steps... or it's possible that they are different over seasons...
+
+
+```{r}
+
+X_Heat_St_K1_K2_P.df <- compute.summary.stats_St_K1_K2_P(best.model.heat$samples, 
+                                                         seasons, 
+                                                         max.days$total.days)
 
 ggplot() + 
-  geom_path(data = X_Heat_St_K1_K2.df,
+  geom_path(data = X_Heat_St_K1_K2_P.df,
             aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Heat_St_K1_K2.df,
+  geom_ribbon(data = X_Heat_St_K1_K2_P.df,
               aes(x = DOS, ymin = Low, ymax = High),
               alpha = 0.4) + 
   geom_point(data = data.1,
@@ -299,7 +316,7 @@ ggplot() +
 Now we add all values of Xs for each year
 
 ```{r}
-X_Heat_St_K1_K2.df %>% 
+X_Heat_St_K1_K2_P.df %>% 
   group_by(Season) %>%
   summarise(total.low = sum(ceiling(Low), na.rm = T),
             total.med = sum(ceiling(Med), na.rm = T),
@@ -376,7 +393,8 @@ for (k in 1:length(model.names)){
 
 }
 
-LOOIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6"),
+LOOIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
+                                    "M7", "M8", "M9", "M10", "M11", "M12"),
                           LOOIC = unlist(lapply(loo.out.cliff, 
                                                 FUN = function(x) x$estimates["looic", "Estimate"])),
                           SE = unlist(lapply(loo.out.cliff, 
@@ -384,7 +402,8 @@ LOOIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6"),
   arrange(by = LOOIC)
 
 # A quick look at DICs
-DIC.Cliff.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6"),
+DIC.Cliff.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
+                                     "M7", "M8", "M9", "M10", "M11", "M12"),
                            DIC = DIC.cliff) %>%
   arrange(by = DIC)
 
