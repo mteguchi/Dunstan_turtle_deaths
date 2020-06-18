@@ -215,3 +215,30 @@ compute.summary.stats_S_K1_K2 <- function(samples, seasons, max.days, P){
   return(X_S_K1_K2.df)
 }
 
+compute.looic <- function(loglik, data.vector, MCMC.params){
+  n.per.chain <- (MCMC.params$n.samples - MCMC.params$n.burnin)/MCMC.params$n.thin
+  
+  # Convert the log-likelihood array into a vector.  
+  LogLik.M <- as.vector(loglik)
+  
+  # Then remove the log-likelihood values that correspond to NA in data
+  LogLik.M.obs <- LogLik.M[!is.na(data.vector)]
+  LogLik.M.obs.mat <- matrix(LogLik.M.obs, 
+                             nrow = MCMC.params$n.chains * n.per.chain)
+  
+  Reff <- relative_eff(exp(LogLik.M.obs.mat),
+                       chain_id = rep(1:MCMC.params$n.chains,
+                                      each = n.per.chain),
+                       cores = 4)
+  
+  loo.out <- rstanarm::loo(LogLik.M.obs.mat, 
+                           r_eff = Reff, 
+                           cores = 4, k_threshold = 0.7)
+  
+  return(loo.out)
+  
+}
+
+
+
+
