@@ -16,7 +16,7 @@ S > 0 and S1 = -S define the "fatness" of the function
 K > 0 defines the "flatness" at the peak of the function
 P defines where the peak is relative to the range of d min(d) < P < max(d).
 For this analysis, I set P to the middle of the season, that is 
-P = floor((max(d) - min(d))/2) because there is not enough data to estimate this parameter.
+P = floor((max(d) - min(d))/2) because there is not enough data to estimate this parameter. This assumption was bothering me so I'm adding six extra models for allowing P to be estimated as well (2020-06-18). 
 min = 0.
 
 Observed counts of deaths are assumed to be normally distributed around this function.
@@ -28,6 +28,8 @@ Model 3: S is constant and K for M1 and M2 are different but season independent 
 Model 4: S is season dependent and K for M1 and M2 are different but season independent (St_K1_K2)
 Model 5: absolute values of S and S1 are not the same (creates a non-symmetrical function), whereas K is constant (S1_S2_K)
 Model 6: absolute values of S and S1 are not the same and K for M1 and M2 are different but season independent (S1_S2_K1_K2)
+
+For Models 7 through 12, I let P to be another parameter to be estimated. They are named +_P, where + is one of the model names above. 
 
 Varying K by season resulted in non-convergence. Consequently, time dependent K models were not considered. 
 
@@ -160,33 +162,60 @@ jags.data.Heat <- list(y = (obs.y.1[,,1]),
                        n.seasons = n.seasons,
                        max.vec = max.mat[,1])
 
+jags.data.Heat_P <- list(y = (obs.y.1[,,1]),
+                         t = obs.t,
+                         n.vec = n.vec,
+                         n.seasons = n.seasons,
+                         max.vec = max.mat[,1])
+
 # Convert the data into a vector also and match with the log-likelihood vector
 # for computing looic.
 data.heat.vector <- as.vector(jags.data.Heat$y) %>% 
   rep(each = MCMC.params$n.chains * n.per.chain)
 
 model.names <- c("S_K", "St_K", "S_K1_K2",
-                 "St_K1_K2", "S1_S2_K", "S1_S2_K1_K2")
+                 "St_K1_K2", "S1_S2_K", "S1_S2_K1_K2",
+                 "S_K_P", "St_K_P", "S_K1_K2_P",
+                 "St_K1_K2_P", "S1_S2_K_P", "S1_S2_K1_K2_P")
 
 jags.parameters <- list(c("sigma.y", "S", "K", "max",
-                       "y", "X", "sigma.max", "deviance", "loglik"),
-                     c("sigma.y", "S", "K", "max",
-                       "y", "X", "sigma.max", "deviance", "loglik"),
-                     c("sigma.y", "S", "K1", "K2", "max",
-                       "y", "X", "sigma.max", "deviance", "loglik"),
-                     c("sigma.y", "S", "K1", "K2", "max",
-                       "y", "X", "sigma.max", "deviance", "loglik"),
-                     c("sigma.y", "S1", "S2", "K", "max",
-                       "y", "X", "sigma.max", "deviance", "loglik"),
-                     c("sigma.y", "S1", "S2", "K1", "K2", "max",
-                       "y", "X", "sigma.max", "deviance", "loglik"))
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K1", "K2", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K1", "K2", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S1", "S2", "K", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S1", "S2", "K1", "K2", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K", "P","max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K1", "K2", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K1", "K2", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S1", "S2", "K", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S1", "S2", "K1", "K2", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"))
 
 loo.out.heat <- vector(mode = "list", length = length(model.names))
 DIC.heat <- vector(mode = "numeric", length = length(model.names))
 
 for (k in 1:length(model.names)){
   if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))){
-    M1.Heat <- jags(jags.data.Heat,
+    
+    if (grep("_P", model.names[[k]]) == 1){
+      jags.data <- jags.data.Heat_P
+    } else {
+      jags.data <- jags.data.Heat
+    }
+    
+    M1.Heat <- jags(jags.data,
                     inits = NULL,
                     parameters.to.save= jags.parameters[[k]],
                     model.file = paste0("models/model_Richards_", model.names[[k]], "_norm.txt"),
@@ -234,6 +263,8 @@ DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6"),
 Model 4 (St_K1_K2) seems to be the best according to LOOIC and DIC values. Pareto k statistics look okay also...
 
 ```{r}
+
+
 best.model.heat.looic <- readRDS(paste0("RData/Richards_Heat_", 
                                         model.names[[4]], "_norm_LOOIC.rds"))
 
@@ -285,6 +316,12 @@ jags.data.Cliff <- list(y = (obs.y.1[,,2]),
                        n.seasons = n.seasons,
                        max.vec = max.mat[,1])
 
+jags.data.Cliff_P <- list(y = (obs.y.1[,,2]),
+                          t = obs.t,
+                          n.vec = n.vec,
+                          n.seasons = n.seasons,
+                          max.vec = max.mat[,1])
+
 # Convert the data into a vector also and match with the log-likelihood vector
 # for computing looic.
 data.cliff.vector <- as.vector(jags.data.Cliff$y) %>% 
@@ -294,6 +331,13 @@ loo.out.cliff <- vector(mode = "list", length = length(model.names))
 DIC.cliff <- vector(mode = "numeric", length = length(model.names))
 
 for (k in 1:length(model.names)){
+  
+  if (grep("_P", model.names[[k]]) == 1){
+      jags.data <- jags.data.Cliff_P
+    } else {
+      jags.data <- jags.data.Cliff
+    }
+
   if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))){
     M1.Cliff <- jags(jags.data.Cliff,
                      inits = NULL,
@@ -404,10 +448,6 @@ X_Cliff_S1_S2_K1_K2.df %>%
 total.deaths.cliff
 ```
 
-Start here 2020-06-17
-
-
-
 Start here next... 2020-06-16
 
 Things to do:
@@ -415,6 +455,11 @@ Things to do:
 2. Using the likelihood values, compute looic DONE
 3. Do model comparison using DIC or looic DONE
 4. Consider using mvnormal for heat-related and cliff-fall deaths together N/A
+
+Start here 2020-06-17
+
+The bulk of the analysis is done. So, convert this to a report. I decided not to use mvnormal because of the two variables (heat-related and cliff-fall deaths) are seemingly uncorrelated. 
+
 
 
 
