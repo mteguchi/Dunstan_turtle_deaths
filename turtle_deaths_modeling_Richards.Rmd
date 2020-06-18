@@ -182,6 +182,8 @@ jags.parameters <- c(c("sigma.y", "S", "K", "max",
                        "y", "X", "sigma.max", "deviance", "loglik"))
 
 loo.out.heat <- vector(mode = "list", length = length(model.names))
+DIC.heat <- vector(mode = "numeric", length = length(model.names))
+
 for (k in 1:length(model.names)){
   if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))){
     M1.Heat <- jags(jags.data.Heat,
@@ -200,6 +202,8 @@ for (k in 1:length(model.names)){
     M1.Heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))
   }
 
+  DIC.heat[k] <- M1.Heat$DIC
+  
   if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm_LOOIC.rds"))){
     loo.out.heat[[k]] <- compute.looic(loglik = M1.Heat$sims.list$loglik,
                                      data.vector = data.heat.vector,
@@ -214,183 +218,34 @@ for (k in 1:length(model.names)){
 
 }
 
-
-# 
-# if (!file.exists(paste0("RData/Richards_Heat_St_K_norm.rds"))){ 
-#   M2.Heat <- jags(jags.data.Heat,
-#                     inits = NULL,
-#                     parameters.to.save= jags.params,
-#                     model.file = 'models/model_Richards_St_K_norm.txt',
-#                     n.chains = MCMC.params$n.chains,
-#                     n.burnin = MCMC.params$n.burnin,
-#                     n.thin = MCMC.params$n.thin,
-#                     n.iter = MCMC.params$n.samples,
-#                     DIC = T, parallel=T)
-#   
-#   saveRDS(M2.Heat, paste0("RData/Richards_Heat_St_K_norm.rds"))
-#   
-# } else {
-#   M2.Heat <- readRDS(paste0("RData/Richards_Heat_St_K_norm.rds"))
-# }
-# 
-# if (!file.exists("RData/Richards_Heat_St_K_norm_LOOIC.rds")){
-#   M2.Heat.loo.out <- compute.looic(loglik = M2.Heat$sims.list$loglik,
-#                                    data.vector = data.heat.vector,
-#                                    MCMC.params = MCMC.params)
-#   saveRDS(M2.Heat.loo.out, "RData/Richards_Heat_St_K_norm_LOOIC.rds")
-# } else {
-#   M2.Heat.loo.out <- readRDS("RData/Richards_Heat_St_K_norm_LOOIC.rds")
-# }
-# 
-# 
-# jags.params <- c("sigma.y", "S", "K1", "K2", "max",
-#                  "y", "X", "sigma.max", "deviance", "loglik")
-# 
-# if (!file.exists(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))){
-#   M3.Heat <- jags(jags.data.Heat,
-#                     inits = NULL,
-#                     parameters.to.save= jags.params,
-#                     model.file = 'models/model_Richards_S_K1_K2_norm.txt',
-#                     n.chains = MCMC.params$n.chains,
-#                     n.burnin = MCMC.params$n.burnin,
-#                     n.thin = MCMC.params$n.thin,
-#                     n.iter = MCMC.params$n.samples,
-#                     DIC = T, parallel=T)
-#   
-#   saveRDS(M3.Heat, paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
-#   
-# } else {
-#   M3.Heat <- readRDS(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
-# }
-# 
-# if (!file.exists("RData/Richards_Heat_S_K1_K2_norm_LOOIC.rds")){
-#   M3.Heat.loo.out <- compute.looic(loglik = M3.Heat$sims.list$loglik,
-#                                    data.vector = data.heat.vector,
-#                                    MCMC.params = MCMC.params)
-#   saveRDS(M3.Heat.loo.out, "RData/Richards_Heat_S_K1_K2_norm_LOOIC.rds")
-# } else {
-#   M3.Heat.loo.out <- readRDS("RData/Richards_Heat_S_K1_K2_norm_LOOIC.rds")
-# }
-# 
-# 
-# if (!file.exists(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))){
-#   M4.Heat <- jags(jags.data.Heat,
-#                     inits = NULL,
-#                     parameters.to.save= jags.params,
-#                     model.file = 'models/model_Richards_St_K1_K2_norm.txt',
-#                     n.chains = MCMC.params$n.chains,
-#                     n.burnin = MCMC.params$n.burnin,
-#                     n.thin = MCMC.params$n.thin,
-#                     n.iter = MCMC.params$n.samples,
-#                     DIC = T, parallel=T)
-#   
-#   saveRDS(M4.Heat, paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
-#   
-# } else {
-#   M4.Heat <- readRDS(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
-# }
-# 
-# if (!file.exists("RData/Richards_Heat_St_K1_K2_norm_LOOIC.rds")){
-#   M4.Heat.loo.out <- compute.looic(loglik = M4.Heat$sims.list$loglik,
-#                                    data.vector = data.heat.vector,
-#                                    MCMC.params = MCMC.params)
-#   saveRDS(M4.Heat.loo.out, "RData/Richards_Heat_St_K1_K2_norm_LOOIC.rds")
-# } else {
-#   M4.Heat.loo.out <- readRDS("RData/Richards_Heat_St_K1_K2_norm_LOOIC.rds")
-# }
-# 
-# jags.params <- c("sigma.y", "S1", "S2", "K", "max",
-#                  "y", "X", "sigma.max", "deviance", "loglik")
-# 
-# if (!file.exists(paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))){
-#   M5.Heat <- jags(jags.data.Heat,
-#                   inits = NULL,
-#                   parameters.to.save= jags.params,
-#                   model.file = 'models/model_Richards_S1_S2_K_norm.txt',
-#                   n.chains = MCMC.params$n.chains,
-#                   n.burnin = MCMC.params$n.burnin,
-#                   n.thin = MCMC.params$n.thin,
-#                   n.iter = MCMC.params$n.samples,
-#                   DIC = T, parallel=T)
-#   
-#   saveRDS(M5.Heat, paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))
-#   
-# } else {
-#   M5.Heat <- readRDS(paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))
-# }
-# 
-# if (!file.exists("RData/Richards_Heat_S1_S2_K_norm_LOOIC.rds")){
-#   M5.Heat.loo.out <- compute.looic(loglik = M5.Heat$sims.list$loglik,
-#                                    data.vector = data.heat.vector,
-#                                    MCMC.params = MCMC.params)
-#   saveRDS(M5.Heat.loo.out, "RData/Richards_Heat_S1_S2_K_norm_LOOIC.rds")
-# } else {
-#   M5.Heat.loo.out <- readRDS("RData/Richards_Heat_S1_S2_K_norm_LOOIC.rds")
-# }
-# 
-# 
-# jags.params <- c("sigma.y", "S1", "S2", "K1", "K2", "max",
-#                  "y", "X", "sigma.max", "deviance", "loglik")
-# 
-# if (!file.exists(paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))){
-#   M6.Heat <- jags(jags.data.Heat,
-#                   inits = NULL,
-#                   parameters.to.save= jags.params,
-#                   model.file = 'models/model_Richards_S1_S2_K1_K2_norm.txt',
-#                   n.chains = MCMC.params$n.chains,
-#                   n.burnin = MCMC.params$n.burnin,
-#                   n.thin = MCMC.params$n.thin,
-#                   n.iter = MCMC.params$n.samples,
-#                   DIC = T, parallel=T)
-#   
-#   saveRDS(M6.Heat, paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))
-#   
-# } else {
-#   M6.Heat <- readRDS(paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))
-# }
-# 
-# if (!file.exists("RData/Richards_Heat_S1_S2_K1_K2_norm_LOOIC.rds")){
-#   M6.Heat.loo.out <- compute.looic(loglik = M6.Heat$sims.list$loglik,
-#                                    data.vector = data.heat.vector,
-#                                    MCMC.params = MCMC.params)
-#   saveRDS(M6.Heat.loo.out, "RData/Richards_Heat_S1_S2_K1_K2_norm_LOOIC.rds")
-# } else {
-#   M6.Heat.loo.out <- readRDS("RData/Richards_Heat_S1_S2_K1_K2_norm_LOOIC.rds")
-# }
-
 LOOIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6"),
-                         LOOIC = c(loo.out.heat[[1]]$estimates["looic", "Estimate"],
-                                   loo.out.heat[[1]]$estimates["looic", "Estimate"],
-                                   M3.Heat.loo.out$estimates["looic", "Estimate"],
-                                   M4.Heat.loo.out$estimates["looic", "Estimate"],
-                                   M5.Heat.loo.out$estimates["looic", "Estimate"],
-                                   M6.Heat.loo.out$estimates["looic", "Estimate"]),
-                         SE = c(M1.Heat.loo.out$estimates["looic", "SE"],
-                                   M2.Heat.loo.out$estimates["looic", "SE"],
-                                   M3.Heat.loo.out$estimates["looic", "SE"],
-                                   M4.Heat.loo.out$estimates["looic", "SE"],
-                                   M5.Heat.loo.out$estimates["looic", "SE"],
-                                   M6.Heat.loo.out$estimates["looic", "SE"])) %>%
+                         LOOIC = unlist(lapply(loo.out.heat, 
+                                               FUN = function(x) x$estimates["looic", "Estimate"])),
+                         SE = unlist(lapply(loo.out.heat, 
+                                            FUN = function(x) x$estimates["looic", "SE"]))) %>%
   arrange(by = LOOIC)
 
 # A quick look at DICs
-DIC.Heat <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6"),
-                       DIC = c(M1.Heat$DIC, M2.Heat$DIC, 
-                               M3.Heat$DIC, M4.Heat$DIC, 
-                               M5.Heat$DIC, M6.Heat$DIC)) %>%
+DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6"),
+                       DIC = DIC.heat) %>%
   arrange(by = DIC)
 ```
 
 Model 4 (St_K1_K2) seems to be the best according to LOOIC and DIC values. Pareto k statistics look okay also...
 
 ```{r}
-pareto_k_table(M1.Heat.loo.out)
+best.model.heat.looic <- readRDS(paste0("RData/Richards_Heat_", 
+                                        model.names[[4]], "_norm_LOOIC.rds"))
+
+pareto_k_table(best.model.heat.looic)
     
 ```
 We'll use Model 4 for computing the total deaths due to the heat related reasons.
 
 ```{r}
-X_Heat_St_K1_K2.df <- compute.summary.stats_St_K1_K2(M4.Heat$samples, 
+best.model.heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[4]], "_norm.rds"))
+
+X_Heat_St_K1_K2.df <- compute.summary.stats_St_K1_K2(best.model.heat$samples, 
                                                      seasons, 
                                                      max.days$total.days, 
                                                      P)
@@ -435,381 +290,92 @@ jags.data.Cliff <- list(y = (obs.y.1[,,2]),
 data.cliff.vector <- as.vector(jags.data.Cliff$y) %>% 
   rep(each = MCMC.params$n.chains * n.per.chain)
 
-jags.params <- c("sigma.y", "S", "K", "max",
-                 "y", "X", "sigma.max", "deviance", "loglik")
+loo.out.cliff <- vector(mode = "list", length = length(model.names))
+DIC.cliff <- vector(mode = "numeric", length = length(model.names))
 
-if (!file.exists(paste0("RData/Richards_Cliff_S_K_norm.rds"))){
-  M1.Cliff <- jags(jags.data.Cliff,
-             inits = NULL,
-             parameters.to.save= jags.params,
-             model.file = 'models/model_Richards_S_K_norm.txt',
-             n.chains = MCMC.params$n.chains,
-             n.burnin = MCMC.params$n.burnin,
-             n.thin = MCMC.params$n.thin,
-             n.iter = MCMC.params$n.samples,
-             DIC = T, parallel=T)
-  
-  saveRDS(M1.Heat, paste0("RData/Richards_Cliff_S_K_norm.rds"))
-  
-} else {
-  M1.Cliff <- readRDS(paste0("RData/Richards_Cliff_S_K_norm.rds"))
-}
-
-if (!file.exists("RData/Richards_Cliff_S_K_norm_LOOIC.rds")){
-  M1.Cliff.loo.out <- compute.looic(loglik = M1.Cliff$sims.list$loglik,
-                                   data.vector = data.cliff.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M1.Cliff.loo.out, "RData/Richards_Cliff_S_K_norm_LOOIC.rds")
-} else {
-  M1.Cliff.loo.out <- readRDS("RData/Richards_Cliff_S_K_norm_LOOIC.rds")
-}
-
-if (!file.exists(paste0("RData/Richards_Cliff_St_K_norm.rds"))){ 
-  M2.Cliff <- jags(jags.data.Cliff,
+for (k in 1:length(model.names)){
+  if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))){
+    M1.Cliff <- jags(jags.data.Cliff,
                     inits = NULL,
-                    parameters.to.save= jags.params,
-                    model.file = 'models/model_Richards_St_K_norm.txt',
+                    parameters.to.save= jags.parameters[[k]],
+                    model.file = paste0("models/model_Richards_", model.names[[k]], "_norm.txt"),
                     n.chains = MCMC.params$n.chains,
                     n.burnin = MCMC.params$n.burnin,
                     n.thin = MCMC.params$n.thin,
                     n.iter = MCMC.params$n.samples,
                     DIC = T, parallel=T)
+    
+    saveRDS(M1.Cliff, paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))
+    
+  } else {
+    M1.Cliff <- readRDS(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))
+  }
+
+  DIC.Cliff[k] <- M1.Cliff$DIC
   
-  saveRDS(M2.Cliff, paste0("RData/Richards_Cliff_St_K_norm.rds"))
-  
-} else {
-  M2.Cliff <- readRDS(paste0("RData/Richards_Cliff_St_K_norm.rds"))
-}
+  if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm_LOOIC.rds"))){
+    loo.out.cliff[[k]] <- compute.looic(loglik = M1.Cliff$sims.list$loglik,
+                                        data.vector = data.cliff.vector,
+                                        MCMC.params = MCMC.params)
+    
+    saveRDS(loo.out.cliff[[k]], paste0("RData/Richards_Cliff_", model.names[[k]], 
+                                       "_norm_LOOIC.rds"))
+  } else {
+    loo.out.cliff[[k]] <- readRDS(paste0("RData/Richards_Cliff_", 
+                                         model.names[[k]], "_norm_LOOIC.rds"))
+  }
 
-if (!file.exists("RData/Richards_Cliff_St_K_norm_LOOIC.rds")){
-  M2.Cliff.loo.out <- compute.looic(loglik = M2.Cliff$sims.list$loglik,
-                                   data.vector = data.cliff.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M2.Cliff.loo.out, "RData/Richards_Cliff_St_K_norm_LOOIC.rds")
-} else {
-  M2.Cliff.loo.out <- readRDS("RData/Richards_Cliff_St_K_norm_LOOIC.rds")
-}
-
-
-jags.params <- c("sigma.y", "S", "K1", "K2", "max",
-                 "y", "X", "sigma.max", "deviance", "loglik")
-
-if (!file.exists(paste0("RData/Richards_Cliff_S_K1_K2_norm.rds"))){
-  M3.Cliff <- jags(jags.data.Cliff,
-                    inits = NULL,
-                    parameters.to.save= jags.params,
-                    model.file = 'models/model_Richards_S_K1_K2_norm.txt',
-                    n.chains = MCMC.params$n.chains,
-                    n.burnin = MCMC.params$n.burnin,
-                    n.thin = MCMC.params$n.thin,
-                    n.iter = MCMC.params$n.samples,
-                    DIC = T, parallel=T)
-  
-  saveRDS(M3.Cliff, paste0("RData/Richards_Cliff_S_K1_K2_norm.rds"))
-  
-} else {
-  M3.Cliff <- readRDS(paste0("RData/Richards_Cliff_S_K1_K2_norm.rds"))
-}
-
-if (!file.exists("RData/Richards_Cliff_S_K1_K2_norm_LOOIC.rds")){
-  M3.Cliff.loo.out <- compute.looic(loglik = M3.Cliff$sims.list$loglik,
-                                   data.vector = data.cliff.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M3.Cliff.loo.out, "RData/Richards_Cliff_S_K1_K2_norm_LOOIC.rds")
-} else {
-  M3.Cliff.loo.out <- readRDS("RData/Richards_Cliff_S_K1_K2_norm_LOOIC.rds")
-}
-
-
-if (!file.exists(paste0("RData/Richards_Cliff_St_K1_K2_norm.rds"))){
-  M4.Cliff <- jags(jags.data.Cliff,
-                    inits = NULL,
-                    parameters.to.save= jags.params,
-                    model.file = 'models/model_Richards_St_K1_K2_norm.txt',
-                    n.chains = MCMC.params$n.chains,
-                    n.burnin = MCMC.params$n.burnin,
-                    n.thin = MCMC.params$n.thin,
-                    n.iter = MCMC.params$n.samples,
-                    DIC = T, parallel=T)
-  
-  saveRDS(M4.Cliff, paste0("RData/Richards_Cliff_St_K1_K2_norm.rds"))
-  
-} else {
-  M4.Cliff <- readRDS(paste0("RData/Richards_Cliff_St_K1_K2_norm.rds"))
-}
-
-if (!file.exists("RData/Richards_Cliff_St_K1_K2_norm_LOOIC.rds")){
-  M4.Cliff.loo.out <- compute.looic(loglik = M4.Cliff$sims.list$loglik,
-                                   data.vector = data.cliff.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M4.Cliff.loo.out, "RData/Richards_Cliff_St_K1_K2_norm_LOOIC.rds")
-} else {
-  M4.Cliff.loo.out <- readRDS("RData/Richards_Cliff_St_K1_K2_norm_LOOIC.rds")
-}
-
-jags.params <- c("sigma.y", "S1", "S2", "K", "max",
-                 "y", "X", "sigma.max", "deviance", "loglik")
-
-if (!file.exists(paste0("RData/Richards_Cliff_S1_S2_K_norm.rds"))){
-  M5.Cliff <- jags(jags.data.Cliff,
-                  inits = NULL,
-                  parameters.to.save= jags.params,
-                  model.file = 'models/model_Richards_S1_S2_K_norm.txt',
-                  n.chains = MCMC.params$n.chains,
-                  n.burnin = MCMC.params$n.burnin,
-                  n.thin = MCMC.params$n.thin,
-                  n.iter = MCMC.params$n.samples,
-                  DIC = T, parallel=T)
-  
-  saveRDS(M5.Cliff, paste0("RData/Richards_Cliff_S1_S2_K_norm.rds"))
-  
-} else {
-  M5.Cliff <- readRDS(paste0("RData/Richards_Cliff_S1_S2_K_norm.rds"))
-}
-
-if (!file.exists("RData/Richards_Cliff_S1_S2_K_norm_LOOIC.rds")){
-  M5.Cliff.loo.out <- compute.looic(loglik = M5.Cliff$sims.list$loglik,
-                                   data.vector = data.cliff.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M5.Cliff.loo.out, "RData/Richards_Cliff_S1_S2_K_norm_LOOIC.rds")
-} else {
-  M5.Cliff.loo.out <- readRDS("RData/Richards_Cliff_S1_S2_K_norm_LOOIC.rds")
-}
-
-
-jags.params <- c("sigma.y", "S1", "S2", "K1", "K2", "max",
-                 "y", "X", "sigma.max", "deviance", "loglik")
-
-if (!file.exists(paste0("RData/Richards_Cliff_S1_S2_K1_K2_norm.rds"))){
-  M6.Cliff <- jags(jags.data.Cliff,
-                  inits = NULL,
-                  parameters.to.save= jags.params,
-                  model.file = 'models/model_Richards_S1_S2_K1_K2_norm.txt',
-                  n.chains = MCMC.params$n.chains,
-                  n.burnin = MCMC.params$n.burnin,
-                  n.thin = MCMC.params$n.thin,
-                  n.iter = MCMC.params$n.samples,
-                  DIC = T, parallel=T)
-  
-  saveRDS(M6.Cliff, paste0("RData/Richards_Cliff_S1_S2_K1_K2_norm.rds"))
-  
-} else {
-  M6.Cliff <- readRDS(paste0("RData/Richards_Cliff_S1_S2_K1_K2_norm.rds"))
-}
-
-if (!file.exists("RData/Richards_Cliff_S1_S2_K1_K2_norm_LOOIC.rds")){
-  M6.Cliff.loo.out <- compute.looic(loglik = M6.Cliff$sims.list$loglik,
-                                   data.vector = data.cliff.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M6.Cliff.loo.out, "RData/Richards_Cliff_S1_S2_K1_K2_norm_LOOIC.rds")
-} else {
-  M6.Cliff.loo.out <- readRDS("RData/Richards_Cliff_S1_S2_K1_K2_norm_LOOIC.rds")
 }
 
 LOOIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6"),
-                         LOOIC = c(M1.Cliff.loo.out$estimates["looic", "Estimate"],
-                                   M2.Cliff.loo.out$estimates["looic", "Estimate"],
-                                   M3.Cliff.loo.out$estimates["looic", "Estimate"],
-                                   M4.Cliff.loo.out$estimates["looic", "Estimate"],
-                                   M5.Cliff.loo.out$estimates["looic", "Estimate"],
-                                   M6.Cliff.loo.out$estimates["looic", "Estimate"]),
-                         SE = c(M1.Cliff.loo.out$estimates["looic", "SE"],
-                                   M2.Cliff.loo.out$estimates["looic", "SE"],
-                                   M3.Cliff.loo.out$estimates["looic", "SE"],
-                                   M4.Cliff.loo.out$estimates["looic", "SE"],
-                                   M5.Cliff.loo.out$estimates["looic", "SE"],
-                                   M6.Cliff.loo.out$estimates["looic", "SE"])) %>%
+                          LOOIC = unlist(lapply(loo.out.cliff, 
+                                                FUN = function(x) x$estimates["looic", "Estimate"])),
+                          SE = unlist(lapply(loo.out.cliff, 
+                                             FUN = function(x) x$estimates["looic", "SE"]))) %>%
   arrange(by = LOOIC)
 
 # A quick look at DICs
-DIC.Cliff <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6"),
-                       DIC = c(M1.Cliff$DIC, M2.Cliff$DIC, 
-                               M3.Cliff$DIC, M4.Cliff$DIC, 
-                               M5.Cliff$DIC, M6.Cliff$DIC)) %>%
+DIC.Cliff.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6"),
+                           DIC = DIC.cliff) %>%
   arrange(by = DIC)
-```
-
-
-
-
-```{r}
-X_Cliff_St_K_df <- compute.summary.stats_St_K(samples = jm.1.Cliff$samples, 
-                                              seasons = seasons, 
-                                              max.days = max.days$total.days, 
-                                              P = P)
-
-ggplot() + 
-  geom_path(data = X_Cliff_St_K_df,
-            aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Cliff_St_K_df,
-              aes(x = DOS, ymin = Low, ymax = High),
-              alpha = 0.4) + 
-      geom_point(data = data.1,
-             aes(x = DOS, y = Heat)) + 
-
-  facet_wrap(.~ as.factor(Season))
-```
-
-
-
-```{r}
-X_Cliff_S_K.df <- compute.summary.stats_S_K(samples = jm.2.Cliff$samples, 
-                                           seasons = seasons, 
-                                           max.days = max.days$total.days, 
-                                           P = P)
-
-ggplot() + 
-  geom_path(data = X_Cliff_S_K.df,
-            aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Cliff_S_K.df,
-              aes(x = DOS, ymin = Low, ymax = High),
-              alpha = 0.4) + 
-     geom_point(data = data.1,
-             aes(x = DOS, y = Heat)) + 
- facet_wrap(.~ as.factor(Season))
-```
-
-
-I created a modified version of the function by Girondot et al. In this model, I created two K parameters; one for increasing part and the other for decreasing part. Let's see how this model fits to the data/
-
-# Heat with the new model
-```{r}
 
 
 ```
 
 
 
+Model 4 (St_K1_K2) seems to be the best according to LOOIC and DIC values. Pareto k statistics look okay also...
+
 ```{r}
-X_Heat_St_K1_K2.df <- compute.summary.stats_St_K1_K2(samples = M4.Heat$samples, 
-                                                     seasons = seasons, 
-                                                     max.days = max.days$total.days, 
-                                                     P = P)
+best.model.clifflooic <- readRDS(paste0("RData/Richards_Cliff_", 
+                                        model.names[[4]], "_norm_LOOIC.rds"))
 
-X_Heat_S_K1_K2.df <- compute.summary.stats_S_K1_K2(samples = M3.Heat$samples, 
-                                           seasons = seasons, 
-                                           max.days = max.days$total.days, 
-                                           P = P)
-
+pareto_k_table(best.model.cliff.looic)
+    
 ```
-
-
+We'll use Model 4 for computing the total deaths due to the heat related reasons.
 
 ```{r}
+best.model.heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[4]], "_norm.rds"))
+
+X_Heat_St_K1_K2.df <- compute.summary.stats_St_K1_K2(best.model.heat$samples, 
+                                                     seasons, 
+                                                     max.days$total.days, 
+                                                     P)
+
 ggplot() + 
   geom_path(data = X_Heat_St_K1_K2.df,
             aes(x = DOS, y = Med)) +
   geom_ribbon(data = X_Heat_St_K1_K2.df,
               aes(x = DOS, ymin = Low, ymax = High),
               alpha = 0.4) + 
-     geom_point(data = data.1,
+  geom_point(data = data.1,
              aes(x = DOS, y = Heat)) + 
- facet_wrap(.~ as.factor(Season))
-```
+  facet_wrap(.~ as.factor(Season))
 
-```{r}
-ggplot() + 
-  geom_path(data = X_Heat_S_K1_K2.df,
-            aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Heat_S_K1_K2.df,
-              aes(x = DOS, ymin = Low, ymax = High),
-              alpha = 0.4) + 
-     geom_point(data = data.1,
-             aes(x = DOS, y = Heat)) + 
- facet_wrap(.~ as.factor(Season))
-```
-
-```{r}
-c(M2.Heat$DIC, M1.Heat$DIC, M4.Heat$DIC, M3.Heat$DIC)
-```
-
-
-# Cliff fall with the new model
-```{r}
-
-if (!file.exists(paste0("RData/Richards_Cliff_St_K1_K2_norm.rds"))){
-  jm.3.Cliff <- jags(jags.data.Cliff,
-                    inits = NULL,
-                    parameters.to.save= jags.params,
-                    model.file = 'models/model_Richards_St_K1_K2_norm.txt',
-                    n.chains = MCMC.params$n.chains,
-                    n.burnin = MCMC.params$n.burnin,
-                    n.thin = MCMC.params$n.thin,
-                    n.iter = MCMC.params$n.samples,
-                    DIC = T, parallel=T)
-  
-  saveRDS(jm.3.Cliff, paste0("RData/Richards_Cliff_St_K1_K2_norm.rds"))
-  
-} else {
-  jm.3.Cliff <- readRDS(paste0("RData/Richards_Cliff_St_K1_K2_norm.rds"))
-}
-
-if (!file.exists(paste0("RData/Richards_Cliff_S_K1_K2_norm.rds"))){
-  jm.4.Cliff <- jags(jags.data.Cliff,
-                     inits = NULL,
-                     parameters.to.save= jags.params,
-                     model.file = 'models/model_Richards_S_K1_K2_norm.txt',
-                     n.chains = MCMC.params$n.chains,
-                     n.burnin = MCMC.params$n.burnin,
-                     n.thin = MCMC.params$n.thin,
-                     n.iter = MCMC.params$n.samples,
-                     DIC = T, parallel=T)
-  
-  saveRDS(jm.4.Cliff, paste0("RData/Richards_Cliff_S_K1_K2_norm.rds"))
-  
-} else {
-  jm.4.Cliff <- readRDS(paste0("RData/Richards_Cliff_S_K1_K2_norm.rds"))
-}
 
 ```
 
-
-
-```{r}
-X_Cliff_St_K1_K2.df <- compute.summary.stats_St_K1_K2(samples = jm.3.Cliff$samples, 
-                                                      seasons = seasons, 
-                                                      max.days = max.days$total.days, 
-                                                      P = P)
-
-X_Cliff_S_K1_K2.df <- compute.summary.stats_S_K1_K2(samples = jm.4.Cliff$samples, 
-                                                    seasons = seasons, 
-                                                    max.days = max.days$total.days, 
-                                                    P = P)
-
-```
-
-
-
-```{r}
-ggplot() + 
-  geom_path(data = X_Cliff_St_K1_K2.df,
-            aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Cliff_St_K1_K2.df,
-              aes(x = DOS, ymin = Low, ymax = High),
-              alpha = 0.4) + 
-     geom_point(data = data.1,
-             aes(x = DOS, y = Cliff)) + 
- facet_wrap(.~ as.factor(Season))
-```
-
-
-
-```{r}
-ggplot() + 
-  geom_path(data = X_Cliff_S_K1_K2.df,
-            aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Cliff_S_K1_K2.df,
-              aes(x = DOS, ymin = Low, ymax = High),
-              alpha = 0.4) + 
-     geom_point(data = data.1,
-             aes(x = DOS, y = Cliff)) + 
- facet_wrap(.~ as.factor(Season))
-```
-
-
-```{r}
-c(jm.1.Cliff$DIC, jm.2.Cliff$DIC, jm.3.Cliff$DIC, jm.4.Cliff$DIC)
-```
 
 
 Start here next... 2020-06-16
