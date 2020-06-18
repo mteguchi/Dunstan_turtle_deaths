@@ -148,31 +148,6 @@ MCMC.params <- list(n.chains = 4,
 
 n.per.chain <- (MCMC.params$n.samples - MCMC.params$n.burnin)/MCMC.params$n.thin
 
-```
-
-
-# Heat related deaths
-
-```{r}
-
-jags.data.Heat <- list(y = (obs.y.1[,,1]),
-                       t = obs.t,
-                       P = P,
-                       n.vec = n.vec,
-                       n.seasons = n.seasons,
-                       max.vec = max.mat[,1])
-
-jags.data.Heat_P <- list(y = (obs.y.1[,,1]),
-                         t = obs.t,
-                         n.vec = n.vec,
-                         n.seasons = n.seasons,
-                         max.vec = max.mat[,1])
-
-# Convert the data into a vector also and match with the log-likelihood vector
-# for computing looic.
-data.heat.vector <- as.vector(jags.data.Heat$y) %>% 
-  rep(each = MCMC.params$n.chains * n.per.chain)
-
 model.names <- c("S_K", "St_K", "S_K1_K2",
                  "St_K1_K2", "S1_S2_K", "S1_S2_K1_K2",
                  "S_K_P", "St_K_P", "S_K1_K2_P",
@@ -202,6 +177,31 @@ jags.parameters <- list(c("sigma.y", "S", "K", "max",
                           "y", "X", "sigma.max", "deviance", "loglik"),
                         c("sigma.y", "S1", "S2", "K1", "K2", "P", "max",
                           "y", "X", "sigma.max", "deviance", "loglik"))
+
+```
+
+
+# Heat related deaths
+
+```{r}
+
+jags.data.Heat <- list(y = (obs.y.1[,,1]),
+                       t = obs.t,
+                       P = P,
+                       n.vec = n.vec,
+                       n.seasons = n.seasons,
+                       max.vec = max.mat[,1])
+
+jags.data.Heat_P <- list(y = (obs.y.1[,,1]),
+                         t = obs.t,
+                         n.vec = n.vec,
+                         n.seasons = n.seasons,
+                         max.vec = max.mat[,1])
+
+# Convert the data into a vector also and match with the log-likelihood vector
+# for computing looic.
+data.heat.vector <- as.vector(jags.data.Heat$y) %>% 
+  rep(each = MCMC.params$n.chains * n.per.chain)
 
 loo.out.heat <- vector(mode = "list", length = length(model.names))
 DIC.heat <- vector(mode = "numeric", length = length(model.names))
@@ -351,14 +351,14 @@ DIC.cliff <- vector(mode = "numeric", length = length(model.names))
 
 for (k in 1:length(model.names)){
   
-  if (grep("_P", model.names[[k]]) == 1){
+  if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))){
+    if (grep("_P", model.names[[k]]) == 1){
       jags.data <- jags.data.Cliff_P
     } else {
       jags.data <- jags.data.Cliff
     }
-
-  if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))){
-    M1.Cliff <- jags(jags.data.Cliff,
+    
+    M1.Cliff <- jags(jags.data,
                      inits = NULL,
                      parameters.to.save= jags.parameters[[k]],
                      model.file = paste0("models/model_Richards_", 
@@ -412,36 +412,25 @@ DIC.Cliff.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
 
 
 
-Model 6 (S1_S2_K1_K2) and Model 4 (St_K1_K2) seem to be the best according to LOOIC and DIC values, respectively. Pareto k statistics look okay also...
+Model 8 (St_K_P) seems to be the best according to LOOIC and DIC values. Pareto k statistics look okay also...
 
 ```{r}
 best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
-                                        model.names[[6]], "_norm_LOOIC.rds"))
+                                        model.names[[8]], "_norm_LOOIC.rds"))
 
 pareto_k_table(best.model.cliff.looic)
     
 ```
+Although some are very bad, the majority are okay. So, I'll go with it. 
 
-
-```{r}
-good.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
-                                        model.names[[4]], "_norm_LOOIC.rds"))
-
-pareto_k_table(good.model.cliff.looic)
-    
-```
-
-Less bad Pareto k diagnostic values for Model 6. So, we'll go with Model 6.
-
-We'll use Model 6 for computing the total deaths due to the heat related reasons.
+We'll use Model 8 for computing the total deaths due to the heat related reasons.
 
 ```{r}
-best.model.cliff <- readRDS(paste0("RData/Richards_Heat_", model.names[[6]], "_norm.rds"))
+best.model.cliff <- readRDS(paste0("RData/Richards_Heat_", model.names[[8]], "_norm.rds"))
 
-X_Cliff_S1_S2_K1_K2.df <- compute.summary.stats_S1_S2_K1_K2(best.model.cliff$samples, 
-                                                     seasons, 
-                                                     max.days$total.days, 
-                                                     P)
+X_Cliff_St_K_P.df <- compute.summary.stats_St_K_P(best.model.cliff$samples, 
+                                                  seasons, 
+                                                  max.days$total.days)
 
 ggplot() + 
   geom_path(data = X_Cliff_S1_S2_K1_K2.df,
