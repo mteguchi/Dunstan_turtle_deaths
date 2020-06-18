@@ -165,180 +165,202 @@ jags.data.Heat <- list(y = (obs.y.1[,,1]),
 data.heat.vector <- as.vector(jags.data.Heat$y) %>% 
   rep(each = MCMC.params$n.chains * n.per.chain)
 
-jags.params <- c("sigma.y", "S", "K", "max",
-                 "y", "X", "sigma.max", "deviance", "loglik")
+model.names <- c("S_K", "St_K", "S_K1_K2",
+                 "St_K1_K2", "S1_S2_K", "S1_S2_K1_K2")
 
-if (!file.exists(paste0("RData/Richards_Heat_S_K_norm.rds"))){
-  M1.Heat <- jags(jags.data.Heat,
-             inits = NULL,
-             parameters.to.save= jags.params,
-             model.file = 'models/model_Richards_S_K_norm.txt',
-             n.chains = MCMC.params$n.chains,
-             n.burnin = MCMC.params$n.burnin,
-             n.thin = MCMC.params$n.thin,
-             n.iter = MCMC.params$n.samples,
-             DIC = T, parallel=T)
-  
-  saveRDS(M1.Heat, paste0("RData/Richards_Heat_S_K_norm.rds"))
-  
-} else {
-  M1.Heat <- readRDS(paste0("RData/Richards_Heat_S_K_norm.rds"))
-}
+jags.parameters <- c(c("sigma.y", "S", "K", "max",
+                       "y", "X", "sigma.max", "deviance", "loglik"),
+                     c("sigma.y", "S", "K", "max",
+                       "y", "X", "sigma.max", "deviance", "loglik"),
+                     c("sigma.y", "S", "K1", "K2", "max",
+                       "y", "X", "sigma.max", "deviance", "loglik"),
+                     c("sigma.y", "S", "K1", "K2", "max",
+                       "y", "X", "sigma.max", "deviance", "loglik"),
+                     c("sigma.y", "S1", "S2", "K", "max",
+                       "y", "X", "sigma.max", "deviance", "loglik"),
+                     c("sigma.y", "S1", "S2", "K1", "K2", "max",
+                       "y", "X", "sigma.max", "deviance", "loglik"))
 
-if (!file.exists("RData/Richards_Heat_S_K_norm_LOOIC.rds")){
-  M1.Heat.loo.out <- compute.looic(loglik = M1.Heat$sims.list$loglik,
-                                   data.vector = data.heat.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M1.Heat.loo.out, "RData/Richards_Heat_S_K_norm_LOOIC.rds")
-} else {
-  M1.Heat.loo.out <- readRDS("RData/Richards_Heat_S_K_norm_LOOIC.rds")
-}
-
-if (!file.exists(paste0("RData/Richards_Heat_St_K_norm.rds"))){ 
-  M2.Heat <- jags(jags.data.Heat,
+loo.out.heat <- vector(mode = "list", length = length(model.names))
+for (k in 1:length(model.names)){
+  if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))){
+    M1.Heat <- jags(jags.data.Heat,
                     inits = NULL,
-                    parameters.to.save= jags.params,
-                    model.file = 'models/model_Richards_St_K_norm.txt',
+                    parameters.to.save= jags.parameters[[k]],
+                    model.file = paste0("models/model_Richards_", model.names[[k]], "_norm.txt"),
                     n.chains = MCMC.params$n.chains,
                     n.burnin = MCMC.params$n.burnin,
                     n.thin = MCMC.params$n.thin,
                     n.iter = MCMC.params$n.samples,
                     DIC = T, parallel=T)
-  
-  saveRDS(M2.Heat, paste0("RData/Richards_Heat_St_K_norm.rds"))
-  
-} else {
-  M2.Heat <- readRDS(paste0("RData/Richards_Heat_St_K_norm.rds"))
-}
+    
+    saveRDS(M1.Heat, paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))
+    
+  } else {
+    M1.Heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))
+  }
 
-if (!file.exists("RData/Richards_Heat_St_K_norm_LOOIC.rds")){
-  M2.Heat.loo.out <- compute.looic(loglik = M2.Heat$sims.list$loglik,
-                                   data.vector = data.heat.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M2.Heat.loo.out, "RData/Richards_Heat_St_K_norm_LOOIC.rds")
-} else {
-  M2.Heat.loo.out <- readRDS("RData/Richards_Heat_St_K_norm_LOOIC.rds")
-}
+  if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm_LOOIC.rds"))){
+    loo.out.heat[[k]] <- compute.looic(loglik = M1.Heat$sims.list$loglik,
+                                     data.vector = data.heat.vector,
+                                     MCMC.params = MCMC.params)
+    
+    saveRDS(loo.out.heat[[k]], paste0("RData/Richards_Heat_", model.names[[k]], 
+                                    "_norm_LOOIC.rds"))
+  } else {
+    loo.out.heat[[k]] <- readRDS(paste0("RData/Richards_Heat_", 
+                                      model.names[[k]], "_norm_LOOIC.rds"))
+  }
 
-
-jags.params <- c("sigma.y", "S", "K1", "K2", "max",
-                 "y", "X", "sigma.max", "deviance", "loglik")
-
-if (!file.exists(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))){
-  M3.Heat <- jags(jags.data.Heat,
-                    inits = NULL,
-                    parameters.to.save= jags.params,
-                    model.file = 'models/model_Richards_S_K1_K2_norm.txt',
-                    n.chains = MCMC.params$n.chains,
-                    n.burnin = MCMC.params$n.burnin,
-                    n.thin = MCMC.params$n.thin,
-                    n.iter = MCMC.params$n.samples,
-                    DIC = T, parallel=T)
-  
-  saveRDS(M3.Heat, paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
-  
-} else {
-  M3.Heat <- readRDS(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
-}
-
-if (!file.exists("RData/Richards_Heat_S_K1_K2_norm_LOOIC.rds")){
-  M3.Heat.loo.out <- compute.looic(loglik = M3.Heat$sims.list$loglik,
-                                   data.vector = data.heat.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M3.Heat.loo.out, "RData/Richards_Heat_S_K1_K2_norm_LOOIC.rds")
-} else {
-  M3.Heat.loo.out <- readRDS("RData/Richards_Heat_S_K1_K2_norm_LOOIC.rds")
 }
 
 
-if (!file.exists(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))){
-  M4.Heat <- jags(jags.data.Heat,
-                    inits = NULL,
-                    parameters.to.save= jags.params,
-                    model.file = 'models/model_Richards_St_K1_K2_norm.txt',
-                    n.chains = MCMC.params$n.chains,
-                    n.burnin = MCMC.params$n.burnin,
-                    n.thin = MCMC.params$n.thin,
-                    n.iter = MCMC.params$n.samples,
-                    DIC = T, parallel=T)
-  
-  saveRDS(M4.Heat, paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
-  
-} else {
-  M4.Heat <- readRDS(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
-}
-
-if (!file.exists("RData/Richards_Heat_St_K1_K2_norm_LOOIC.rds")){
-  M4.Heat.loo.out <- compute.looic(loglik = M4.Heat$sims.list$loglik,
-                                   data.vector = data.heat.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M4.Heat.loo.out, "RData/Richards_Heat_St_K1_K2_norm_LOOIC.rds")
-} else {
-  M4.Heat.loo.out <- readRDS("RData/Richards_Heat_St_K1_K2_norm_LOOIC.rds")
-}
-
-jags.params <- c("sigma.y", "S1", "S2", "K", "max",
-                 "y", "X", "sigma.max", "deviance", "loglik")
-
-if (!file.exists(paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))){
-  M5.Heat <- jags(jags.data.Heat,
-                  inits = NULL,
-                  parameters.to.save= jags.params,
-                  model.file = 'models/model_Richards_S1_S2_K_norm.txt',
-                  n.chains = MCMC.params$n.chains,
-                  n.burnin = MCMC.params$n.burnin,
-                  n.thin = MCMC.params$n.thin,
-                  n.iter = MCMC.params$n.samples,
-                  DIC = T, parallel=T)
-  
-  saveRDS(M5.Heat, paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))
-  
-} else {
-  M5.Heat <- readRDS(paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))
-}
-
-if (!file.exists("RData/Richards_Heat_S1_S2_K_norm_LOOIC.rds")){
-  M5.Heat.loo.out <- compute.looic(loglik = M5.Heat$sims.list$loglik,
-                                   data.vector = data.heat.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M5.Heat.loo.out, "RData/Richards_Heat_S1_S2_K_norm_LOOIC.rds")
-} else {
-  M5.Heat.loo.out <- readRDS("RData/Richards_Heat_S1_S2_K_norm_LOOIC.rds")
-}
-
-
-jags.params <- c("sigma.y", "S1", "S2", "K1", "K2", "max",
-                 "y", "X", "sigma.max", "deviance", "loglik")
-
-if (!file.exists(paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))){
-  M6.Heat <- jags(jags.data.Heat,
-                  inits = NULL,
-                  parameters.to.save= jags.params,
-                  model.file = 'models/model_Richards_S1_S2_K1_K2_norm.txt',
-                  n.chains = MCMC.params$n.chains,
-                  n.burnin = MCMC.params$n.burnin,
-                  n.thin = MCMC.params$n.thin,
-                  n.iter = MCMC.params$n.samples,
-                  DIC = T, parallel=T)
-  
-  saveRDS(M6.Heat, paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))
-  
-} else {
-  M6.Heat <- readRDS(paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))
-}
-
-if (!file.exists("RData/Richards_Heat_S1_S2_K1_K2_norm_LOOIC.rds")){
-  M6.Heat.loo.out <- compute.looic(loglik = M6.Heat$sims.list$loglik,
-                                   data.vector = data.heat.vector,
-                                   MCMC.params = MCMC.params)
-  saveRDS(M6.Heat.loo.out, "RData/Richards_Heat_S1_S2_K1_K2_norm_LOOIC.rds")
-} else {
-  M6.Heat.loo.out <- readRDS("RData/Richards_Heat_S1_S2_K1_K2_norm_LOOIC.rds")
-}
+# 
+# if (!file.exists(paste0("RData/Richards_Heat_St_K_norm.rds"))){ 
+#   M2.Heat <- jags(jags.data.Heat,
+#                     inits = NULL,
+#                     parameters.to.save= jags.params,
+#                     model.file = 'models/model_Richards_St_K_norm.txt',
+#                     n.chains = MCMC.params$n.chains,
+#                     n.burnin = MCMC.params$n.burnin,
+#                     n.thin = MCMC.params$n.thin,
+#                     n.iter = MCMC.params$n.samples,
+#                     DIC = T, parallel=T)
+#   
+#   saveRDS(M2.Heat, paste0("RData/Richards_Heat_St_K_norm.rds"))
+#   
+# } else {
+#   M2.Heat <- readRDS(paste0("RData/Richards_Heat_St_K_norm.rds"))
+# }
+# 
+# if (!file.exists("RData/Richards_Heat_St_K_norm_LOOIC.rds")){
+#   M2.Heat.loo.out <- compute.looic(loglik = M2.Heat$sims.list$loglik,
+#                                    data.vector = data.heat.vector,
+#                                    MCMC.params = MCMC.params)
+#   saveRDS(M2.Heat.loo.out, "RData/Richards_Heat_St_K_norm_LOOIC.rds")
+# } else {
+#   M2.Heat.loo.out <- readRDS("RData/Richards_Heat_St_K_norm_LOOIC.rds")
+# }
+# 
+# 
+# jags.params <- c("sigma.y", "S", "K1", "K2", "max",
+#                  "y", "X", "sigma.max", "deviance", "loglik")
+# 
+# if (!file.exists(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))){
+#   M3.Heat <- jags(jags.data.Heat,
+#                     inits = NULL,
+#                     parameters.to.save= jags.params,
+#                     model.file = 'models/model_Richards_S_K1_K2_norm.txt',
+#                     n.chains = MCMC.params$n.chains,
+#                     n.burnin = MCMC.params$n.burnin,
+#                     n.thin = MCMC.params$n.thin,
+#                     n.iter = MCMC.params$n.samples,
+#                     DIC = T, parallel=T)
+#   
+#   saveRDS(M3.Heat, paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
+#   
+# } else {
+#   M3.Heat <- readRDS(paste0("RData/Richards_Heat_S_K1_K2_norm.rds"))
+# }
+# 
+# if (!file.exists("RData/Richards_Heat_S_K1_K2_norm_LOOIC.rds")){
+#   M3.Heat.loo.out <- compute.looic(loglik = M3.Heat$sims.list$loglik,
+#                                    data.vector = data.heat.vector,
+#                                    MCMC.params = MCMC.params)
+#   saveRDS(M3.Heat.loo.out, "RData/Richards_Heat_S_K1_K2_norm_LOOIC.rds")
+# } else {
+#   M3.Heat.loo.out <- readRDS("RData/Richards_Heat_S_K1_K2_norm_LOOIC.rds")
+# }
+# 
+# 
+# if (!file.exists(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))){
+#   M4.Heat <- jags(jags.data.Heat,
+#                     inits = NULL,
+#                     parameters.to.save= jags.params,
+#                     model.file = 'models/model_Richards_St_K1_K2_norm.txt',
+#                     n.chains = MCMC.params$n.chains,
+#                     n.burnin = MCMC.params$n.burnin,
+#                     n.thin = MCMC.params$n.thin,
+#                     n.iter = MCMC.params$n.samples,
+#                     DIC = T, parallel=T)
+#   
+#   saveRDS(M4.Heat, paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
+#   
+# } else {
+#   M4.Heat <- readRDS(paste0("RData/Richards_Heat_St_K1_K2_norm.rds"))
+# }
+# 
+# if (!file.exists("RData/Richards_Heat_St_K1_K2_norm_LOOIC.rds")){
+#   M4.Heat.loo.out <- compute.looic(loglik = M4.Heat$sims.list$loglik,
+#                                    data.vector = data.heat.vector,
+#                                    MCMC.params = MCMC.params)
+#   saveRDS(M4.Heat.loo.out, "RData/Richards_Heat_St_K1_K2_norm_LOOIC.rds")
+# } else {
+#   M4.Heat.loo.out <- readRDS("RData/Richards_Heat_St_K1_K2_norm_LOOIC.rds")
+# }
+# 
+# jags.params <- c("sigma.y", "S1", "S2", "K", "max",
+#                  "y", "X", "sigma.max", "deviance", "loglik")
+# 
+# if (!file.exists(paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))){
+#   M5.Heat <- jags(jags.data.Heat,
+#                   inits = NULL,
+#                   parameters.to.save= jags.params,
+#                   model.file = 'models/model_Richards_S1_S2_K_norm.txt',
+#                   n.chains = MCMC.params$n.chains,
+#                   n.burnin = MCMC.params$n.burnin,
+#                   n.thin = MCMC.params$n.thin,
+#                   n.iter = MCMC.params$n.samples,
+#                   DIC = T, parallel=T)
+#   
+#   saveRDS(M5.Heat, paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))
+#   
+# } else {
+#   M5.Heat <- readRDS(paste0("RData/Richards_Heat_S1_S2_K_norm.rds"))
+# }
+# 
+# if (!file.exists("RData/Richards_Heat_S1_S2_K_norm_LOOIC.rds")){
+#   M5.Heat.loo.out <- compute.looic(loglik = M5.Heat$sims.list$loglik,
+#                                    data.vector = data.heat.vector,
+#                                    MCMC.params = MCMC.params)
+#   saveRDS(M5.Heat.loo.out, "RData/Richards_Heat_S1_S2_K_norm_LOOIC.rds")
+# } else {
+#   M5.Heat.loo.out <- readRDS("RData/Richards_Heat_S1_S2_K_norm_LOOIC.rds")
+# }
+# 
+# 
+# jags.params <- c("sigma.y", "S1", "S2", "K1", "K2", "max",
+#                  "y", "X", "sigma.max", "deviance", "loglik")
+# 
+# if (!file.exists(paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))){
+#   M6.Heat <- jags(jags.data.Heat,
+#                   inits = NULL,
+#                   parameters.to.save= jags.params,
+#                   model.file = 'models/model_Richards_S1_S2_K1_K2_norm.txt',
+#                   n.chains = MCMC.params$n.chains,
+#                   n.burnin = MCMC.params$n.burnin,
+#                   n.thin = MCMC.params$n.thin,
+#                   n.iter = MCMC.params$n.samples,
+#                   DIC = T, parallel=T)
+#   
+#   saveRDS(M6.Heat, paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))
+#   
+# } else {
+#   M6.Heat <- readRDS(paste0("RData/Richards_Heat_S1_S2_K1_K2_norm.rds"))
+# }
+# 
+# if (!file.exists("RData/Richards_Heat_S1_S2_K1_K2_norm_LOOIC.rds")){
+#   M6.Heat.loo.out <- compute.looic(loglik = M6.Heat$sims.list$loglik,
+#                                    data.vector = data.heat.vector,
+#                                    MCMC.params = MCMC.params)
+#   saveRDS(M6.Heat.loo.out, "RData/Richards_Heat_S1_S2_K1_K2_norm_LOOIC.rds")
+# } else {
+#   M6.Heat.loo.out <- readRDS("RData/Richards_Heat_S1_S2_K1_K2_norm_LOOIC.rds")
+# }
 
 LOOIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6"),
-                         LOOIC = c(M1.Heat.loo.out$estimates["looic", "Estimate"],
-                                   M2.Heat.loo.out$estimates["looic", "Estimate"],
+                         LOOIC = c(loo.out.heat[[1]]$estimates["looic", "Estimate"],
+                                   loo.out.heat[[1]]$estimates["looic", "Estimate"],
                                    M3.Heat.loo.out$estimates["looic", "Estimate"],
                                    M4.Heat.loo.out$estimates["looic", "Estimate"],
                                    M5.Heat.loo.out$estimates["looic", "Estimate"],
