@@ -205,6 +205,7 @@ data.heat.vector <- as.vector(jags.data.Heat$y) %>%
 
 loo.out.heat <- vector(mode = "list", length = length(model.names))
 DIC.heat <- vector(mode = "numeric", length = length(model.names))
+max.Rhat.heat <- vector(mode = "numeric", length = length(model.names))
 
 for (k in 1:length(model.names)){
   if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))){
@@ -232,6 +233,7 @@ for (k in 1:length(model.names)){
   }
 
   DIC.heat[k] <- M1.Heat$DIC
+  max.Rhat.heat[k] <- data.frame(M1.Heat$summary) %>% select(Rhat) %>% max(na.rm = T)
   
   if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm_LOOIC.rds"))){
     loo.out.heat[[k]] <- compute.looic(loglik = M1.Heat$sims.list$loglik,
@@ -250,19 +252,22 @@ for (k in 1:length(model.names)){
 LOOIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
                                    "M7", "M8", "M9", "M10", "M11", "M12"),
                          LOOIC = unlist(lapply(loo.out.heat, 
-                                               FUN = function(x) x$estimates["looic", "Estimate"])),
+                                               FUN = function(x) x$estimates["looic",
+                                                                             "Estimate"])),
                          SE = unlist(lapply(loo.out.heat, 
-                                            FUN = function(x) x$estimates["looic", "SE"]))) %>%
+                                            FUN = function(x) x$estimates["looic", "SE"])),
+                         max.Rhat = max.Rhat.heat) %>%
   arrange(by = LOOIC)
 
 # A quick look at DICs
 DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
                                     "M7", "M8", "M9", "M10", "M11", "M12"),
-                       DIC = DIC.heat) %>%
+                          DIC = DIC.heat,
+                          max.Rhat = max.Rhat.heat) %>%
   arrange(by = DIC)
 ```
 
-Model 10 (St_K1_K2_P) seems to be the best according to LOOIC and DIC values. Pareto k statistics look okay also...
+Model 10 (St_K1_K2_P) seems to be the best according to LOOIC and DIC values. Convergence was reached for all parameters as well (max.Rhat < 1.1). Pareto k statistics look okay also...
 
 ```{r}
 
@@ -348,6 +353,7 @@ data.cliff.vector <- as.vector(jags.data.Cliff$y) %>%
 
 loo.out.cliff <- vector(mode = "list", length = length(model.names))
 DIC.cliff <- vector(mode = "numeric", length = length(model.names))
+max.Rhat.cliff <- vector(mode = "numeric", length = length(model.names))
 
 for (k in 1:length(model.names)){
   
@@ -376,6 +382,7 @@ for (k in 1:length(model.names)){
   }
   
   DIC.cliff[k] <- M1.Cliff$DIC
+  max.Rhat.cliff[k] <- data.frame(M1.Cliff$summary) %>% select(Rhat) %>% max(na.rm = TRUE)
   
   if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm_LOOIC.rds"))){
     #data.cliff.
@@ -396,27 +403,29 @@ for (k in 1:length(model.names)){
 LOOIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
                                     "M7", "M8", "M9", "M10", "M11", "M12"),
                           LOOIC = unlist(lapply(loo.out.cliff, 
-                                                FUN = function(x) x$estimates["looic", "Estimate"])),
+                                                FUN = function(x) x$estimates["looic",
+                                                                              "Estimate"])),
                           SE = unlist(lapply(loo.out.cliff, 
-                                             FUN = function(x) x$estimates["looic", "SE"]))) %>%
+                                             FUN = function(x) x$estimates["looic", "SE"])),
+                          Max.Rhat = max.Rhat.cliff) %>%
   arrange(by = LOOIC)
 
 # A quick look at DICs
 DIC.Cliff.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
                                      "M7", "M8", "M9", "M10", "M11", "M12"),
-                           DIC = DIC.cliff) %>%
+                           DIC = DIC.cliff,
+                           Max.Rhat = max.Rhat.cliff) %>%
   arrange(by = DIC)
 
 
 ```
 
 
-
-Model 8 (St_K_P) seems to be the best according to LOOIC and DIC values. Pareto k statistics look okay also...
+Model 8 (St_K_P) seems to be the best according to LOOIC and DIC values but the convergence is an issue. I can increase the MCMC sample size later. For now, I'll use the second best (Model 10) for this time. Pareto k statistics look okay also...
 
 ```{r}
 best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
-                                        model.names[[8]], "_norm_LOOIC.rds"))
+                                        model.names[[10]], "_norm_LOOIC.rds"))
 
 pareto_k_table(best.model.cliff.looic)
     
@@ -426,16 +435,16 @@ Although some are very bad, the majority are okay. So, I'll go with it.
 We'll use Model 8 for computing the total deaths due to the heat related reasons.
 
 ```{r}
-best.model.cliff <- readRDS(paste0("RData/Richards_Heat_", model.names[[8]], "_norm.rds"))
+best.model.cliff <- readRDS(paste0("RData/Richards_Heat_", model.names[[10]], "_norm.rds"))
 
-X_Cliff_St_K_P.df <- compute.summary.stats_St_K_P(best.model.cliff$samples, 
-                                                  seasons, 
-                                                  max.days$total.days)
+X_Cliff_St_K1_K2_P.df <- compute.summary.stats_St_K1_K2_P(best.model.cliff$samples, 
+                                                          seasons, 
+                                                          max.days$total.days)
 
 ggplot() + 
-  geom_path(data = X_Cliff_S1_S2_K1_K2.df,
+  geom_path(data = X_Cliff_St_K1_K2_P.df,
             aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Cliff_S1_S2_K1_K2.df,
+  geom_ribbon(data = X_Cliff_St_K1_K2_P.df,
               aes(x = DOS, ymin = Low, ymax = High),
               alpha = 0.4) + 
   geom_point(data = data.1,
@@ -449,13 +458,18 @@ ggplot() +
 Now we add all values of Xs for each year
 
 ```{r}
-X_Cliff_S1_S2_K1_K2.df %>% 
+X_Cliff_St_K1_K2_P.df %>% 
   group_by(Season) %>%
   summarise(total.low = sum(ceiling(Low), na.rm = T),
             total.med = sum(ceiling(Med), na.rm = T),
             total.high = sum(ceiling(High), na.rm = T)) -> total.deaths.cliff
 
-total.deaths.cliff
+#total.deaths.cliff
+```
+
+
+```{r}
+mcmc_trace(best.model.cliff$samples, "P")
 ```
 
 Start here next... 2020-06-16
