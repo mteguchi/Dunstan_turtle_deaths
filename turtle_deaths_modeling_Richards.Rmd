@@ -247,7 +247,8 @@ for (k in 1:length(model.names)){
 
 }
 
-LOOIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6"),
+LOOIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
+                                   "M7", "M8", "M9", "M10", "M11", "M12"),
                          LOOIC = unlist(lapply(loo.out.heat, 
                                                FUN = function(x) x$estimates["looic", "Estimate"])),
                          SE = unlist(lapply(loo.out.heat, 
@@ -255,7 +256,8 @@ LOOIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6"),
   arrange(by = LOOIC)
 
 # A quick look at DICs
-DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6"),
+DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
+                                    "M7", "M8", "M9", "M10", "M11", "M12"),
                        DIC = DIC.heat) %>%
   arrange(by = DIC)
 ```
