@@ -1,0 +1,30 @@
+---
+title: "Estimating total deaths of adult female green turtles at Raine Island"
+author: "Tomo Eguchi"
+date: "6/18/2020"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+Determining the number of deaths of green turtles at Raine Island is important in understanding the effects of these deaths on the population, as well as for investing in measures to decrease the deaths. In this document, I used data on observed deaths from periodical surveys of the island to estimate the total deaths for each nesting season. 
+
+## Methods
+
+The dataset for this analysis contained the observed deaths of female green turtles at Raine Island from the 1995 to 2019 season. The dataset included presumed zeros at the beginning (October 16 - October 20) and end of each nesting season (April 1 - April 5). Observations were made only when a research team was present on the island. The number of trips per season varied over the years (Figure 1). Cause of deaths were grouped into either "heat-related" or "cliff-fall."  
+
+In order to estimate the number of unobserved deaths from the two causes (i.e., heat-related or cliff-fall), within each season, I fitted parametric functions to the data. These functions are modified Richards function (Girondot et al. 2007) and they represent varying assumptions. In total 12 models were constructed. The base function has the following form.
+
+
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
