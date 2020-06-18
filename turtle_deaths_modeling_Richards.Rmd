@@ -168,7 +168,7 @@ data.heat.vector <- as.vector(jags.data.Heat$y) %>%
 model.names <- c("S_K", "St_K", "S_K1_K2",
                  "St_K1_K2", "S1_S2_K", "S1_S2_K1_K2")
 
-jags.parameters <- c(c("sigma.y", "S", "K", "max",
+jags.parameters <- list(c("sigma.y", "S", "K", "max",
                        "y", "X", "sigma.max", "deviance", "loglik"),
                      c("sigma.y", "S", "K", "max",
                        "y", "X", "sigma.max", "deviance", "loglik"),
@@ -206,14 +206,14 @@ for (k in 1:length(model.names)){
   
   if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm_LOOIC.rds"))){
     loo.out.heat[[k]] <- compute.looic(loglik = M1.Heat$sims.list$loglik,
-                                     data.vector = data.heat.vector,
-                                     MCMC.params = MCMC.params)
+                                       data.vector = data.heat.vector,
+                                       MCMC.params = MCMC.params)
     
     saveRDS(loo.out.heat[[k]], paste0("RData/Richards_Heat_", model.names[[k]], 
-                                    "_norm_LOOIC.rds"))
+                                      "_norm_LOOIC.rds"))
   } else {
     loo.out.heat[[k]] <- readRDS(paste0("RData/Richards_Heat_", 
-                                      model.names[[k]], "_norm_LOOIC.rds"))
+                                        model.names[[k]], "_norm_LOOIC.rds"))
   }
 
 }
@@ -296,24 +296,27 @@ DIC.cliff <- vector(mode = "numeric", length = length(model.names))
 for (k in 1:length(model.names)){
   if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))){
     M1.Cliff <- jags(jags.data.Cliff,
-                    inits = NULL,
-                    parameters.to.save= jags.parameters[[k]],
-                    model.file = paste0("models/model_Richards_", model.names[[k]], "_norm.txt"),
-                    n.chains = MCMC.params$n.chains,
-                    n.burnin = MCMC.params$n.burnin,
-                    n.thin = MCMC.params$n.thin,
-                    n.iter = MCMC.params$n.samples,
-                    DIC = T, parallel=T)
+                     inits = NULL,
+                     parameters.to.save= jags.parameters[[k]],
+                     model.file = paste0("models/model_Richards_", 
+                                         model.names[[k]], "_norm.txt"),
+                     n.chains = MCMC.params$n.chains,
+                     n.burnin = MCMC.params$n.burnin,
+                     n.thin = MCMC.params$n.thin,
+                     n.iter = MCMC.params$n.samples,
+                     DIC = T, parallel=T)
     
     saveRDS(M1.Cliff, paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))
     
   } else {
     M1.Cliff <- readRDS(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))
   }
-
-  DIC.Cliff[k] <- M1.Cliff$DIC
+  
+  DIC.cliff[k] <- M1.Cliff$DIC
   
   if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm_LOOIC.rds"))){
+    #data.cliff.
+    
     loo.out.cliff[[k]] <- compute.looic(loglik = M1.Cliff$sims.list$loglik,
                                         data.vector = data.cliff.vector,
                                         MCMC.params = MCMC.params)
@@ -344,47 +347,74 @@ DIC.Cliff.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6"),
 
 
 
-Model 4 (St_K1_K2) seems to be the best according to LOOIC and DIC values. Pareto k statistics look okay also...
+Model 6 (S1_S2_K1_K2) and Model 4 (St_K1_K2) seem to be the best according to LOOIC and DIC values, respectively. Pareto k statistics look okay also...
 
 ```{r}
-best.model.clifflooic <- readRDS(paste0("RData/Richards_Cliff_", 
-                                        model.names[[4]], "_norm_LOOIC.rds"))
+best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
+                                        model.names[[6]], "_norm_LOOIC.rds"))
 
 pareto_k_table(best.model.cliff.looic)
     
 ```
-We'll use Model 4 for computing the total deaths due to the heat related reasons.
+
 
 ```{r}
-best.model.heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[4]], "_norm.rds"))
+good.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
+                                        model.names[[4]], "_norm_LOOIC.rds"))
 
-X_Heat_St_K1_K2.df <- compute.summary.stats_St_K1_K2(best.model.heat$samples, 
+pareto_k_table(good.model.cliff.looic)
+    
+```
+
+Less bad Pareto k diagnostic values for Model 6. So, we'll go with Model 6.
+
+We'll use Model 6 for computing the total deaths due to the heat related reasons.
+
+```{r}
+best.model.cliff <- readRDS(paste0("RData/Richards_Heat_", model.names[[6]], "_norm.rds"))
+
+X_Cliff_S1_S2_K1_K2.df <- compute.summary.stats_S1_S2_K1_K2(best.model.cliff$samples, 
                                                      seasons, 
                                                      max.days$total.days, 
                                                      P)
 
 ggplot() + 
-  geom_path(data = X_Heat_St_K1_K2.df,
+  geom_path(data = X_Cliff_S1_S2_K1_K2.df,
             aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Heat_St_K1_K2.df,
+  geom_ribbon(data = X_Cliff_S1_S2_K1_K2.df,
               aes(x = DOS, ymin = Low, ymax = High),
               alpha = 0.4) + 
   geom_point(data = data.1,
-             aes(x = DOS, y = Heat)) + 
+             aes(x = DOS, y = Cliff)) + 
   facet_wrap(.~ as.factor(Season))
 
 
 ```
 
 
+Now we add all values of Xs for each year
+
+```{r}
+X_Cliff_S1_S2_K1_K2.df %>% 
+  group_by(Season) %>%
+  summarise(total.low = sum(ceiling(Low), na.rm = T),
+            total.med = sum(ceiling(Med), na.rm = T),
+            total.high = sum(ceiling(High), na.rm = T)) -> total.deaths.cliff
+
+total.deaths.cliff
+```
+
+Start here 2020-06-17
+
+
 
 Start here next... 2020-06-16
 
 Things to do:
-1. Add likelihood lines to the models and run all models again
-2. Using the likelihood values, compute looic
-3. Do model comparison using DIC or looic
-4. Consider using mvnormal for heat-related and cliff-fall deaths together
+1. Add likelihood lines to the models and run all models again DONE
+2. Using the likelihood values, compute looic DONE
+3. Do model comparison using DIC or looic DONE
+4. Consider using mvnormal for heat-related and cliff-fall deaths together N/A
 
 
 
