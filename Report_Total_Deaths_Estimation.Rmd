@@ -17,9 +17,32 @@ Determining the number of deaths of green turtles at Raine Island is important i
 
 The dataset for this analysis contained the observed deaths of female green turtles at Raine Island from the 1995 to 2019 season. The dataset included presumed zeros at the beginning (October 16 - October 20) and end of each nesting season (April 1 - April 5). Observations were made only when a research team was present on the island. The number of trips per season varied over the years (Figure 1). Cause of deaths were grouped into either "heat-related" or "cliff-fall."  
 
-In order to estimate the number of unobserved deaths from the two causes (i.e., heat-related or cliff-fall), within each season, I fitted parametric functions to the data. These functions are modified Richards function (Girondot et al. 2007) and they represent varying assumptions. In total 12 models were constructed. The base function has the following form.
+In order to estimate the number of unobserved deaths from the two causes (i.e., heat-related or cliff-fall), within each season, I fitted parametric functions to the data using the state-space approach. The state space is modeled by modified versions of Richards function, whereas the observations are assumed to be distributed normally around the functions. Modification of the Richards function represent varying assumptions of the underlying process. In total, 12 models were constructed. The base function has the following form (Girondot et al. 2007).
 
+S1 = -S
+M1 = (1 + (2 * exp(K) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K))
+M2 = (1 + (2 * exp(K) - 1) * exp((1/S) * (P - d))) ^ (-1/exp(K))
+N = min + (max - min) * (M1 * M2)
 
+d = the number of days from the beginning of nesting season
+S > 0 defines the "fatness" of the function
+K > 0 defines the "flatness" at the peak of the function
+P defines where the peak is relative to the range of d min(d) < P < max(d).
+min = 0.
+max = the maximum number of deaths per day.
+
+Model 1: S and K are constants (S_K)
+Model 2: S is season dependent, whereas K is constant (St_K)
+Model 3: S is constant, whereas K for M1 and M2 are different (S_K1_K2)
+Model 4: S is season dependent, whereas K for M1 and M2 are different (St_K1_K2)
+Model 5: absolute values of S and S1 are not the same (creates a non-symmetrical function), whereas K is constant (S1_S2_K)
+Model 6: absolute values of S and S1 are not the same, whereas K for M1 and M2 are different (S1_S2_K1_K2)
+
+For Models 7 through 12, I let P to be another parameter to be estimated. They are named +_P, where + is one of the model names above. 
+
+Varying K by season resulted in non-convergence. Consequently, time dependent K models were not considered. 
+
+Observed counts of deaths are assumed to be normally distributed around this function.
 
 You can also embed plots, for example:
 
