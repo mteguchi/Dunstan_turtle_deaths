@@ -255,22 +255,23 @@ for (k in 1:length(model.names)){
 
 }
 
-LOOIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
+LOOIC.DIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
                                    "M7", "M8", "M9", "M10", "M11", "M12"),
                          LOOIC = unlist(lapply(loo.out.heat, 
                                                FUN = function(x) x$estimates["looic",
                                                                              "Estimate"])),
                          SE = unlist(lapply(loo.out.heat, 
                                             FUN = function(x) x$estimates["looic", "SE"])),
+                         DIC = DIC.heat,
                          max.Rhat = max.Rhat.heat) %>%
   arrange(by = LOOIC)
 
 # A quick look at DICs
-DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
-                                    "M7", "M8", "M9", "M10", "M11", "M12"),
-                          DIC = DIC.heat,
-                          max.Rhat = max.Rhat.heat) %>%
-  arrange(by = DIC)
+# DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
+#                                     "M7", "M8", "M9", "M10", "M11", "M12"),
+#                           DIC = DIC.heat,
+#                           max.Rhat = max.Rhat.heat) %>%
+#  arrange(by = DIC)
 ```
 
 Model 10 (St_K1_K2_P) seems to be the best according to LOOIC and DIC values. Convergence was reached for all parameters as well (max.Rhat < 1.1). Pareto k statistics look okay also...
@@ -413,25 +414,30 @@ LOOIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
                                                                               "Estimate"])),
                           SE = unlist(lapply(loo.out.cliff, 
                                              FUN = function(x) x$estimates["looic", "SE"])),
+                          DIC = DIC.cliff,
                           Max.Rhat = max.Rhat.cliff) %>%
   arrange(by = LOOIC)
 
 # A quick look at DICs
-DIC.Cliff.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
-                                     "M7", "M8", "M9", "M10", "M11", "M12"),
-                           DIC = DIC.cliff,
-                           Max.Rhat = max.Rhat.cliff) %>%
-  arrange(by = DIC)
+# DIC.Cliff.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
+#                                      "M7", "M8", "M9", "M10", "M11", "M12"),
+#                            DIC = DIC.cliff,
+#                            Max.Rhat = max.Rhat.cliff) %>%
+#   arrange(by = DIC)
 
 
 ```
 
 
-Model 8 (St_K_P) seems to be the best according to LOOIC and DIC values but the convergence is an issue. I can increase the MCMC sample size later. For now, I'll use the second best (Model 10) for this time. Pareto k statistics look okay also...
+Model 8 (St_K_P) seems to be the best according to LOOIC and DIC values but the convergence is an issue. I can increase the MCMC sample size later. For now, I'll use the second best (Model 10) for this time. Pareto k statistics look okay also...  
+
+Correction: I rerun M8 with longer chains and got them to converge (Rhat < 1.1) so using M8 for the following. 2020-06-19.
 
 ```{r}
+best.model.cliff.ID <- 8
 best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
-                                        model.names[[10]], "_norm_LOOIC.rds"))
+                                        model.names[[best.model.cliff.ID]],
+                                        "_norm_LOOIC.rds"))
 
 pareto_k_table(best.model.cliff.looic)
     
@@ -441,16 +447,18 @@ Although some are very bad, the majority are okay. So, I'll go with it.
 We'll use Model 8 for computing the total deaths due to the heat related reasons.
 
 ```{r}
-best.model.cliff <- readRDS(paste0("RData/Richards_Heat_", model.names[[10]], "_norm.rds"))
+best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
+                                   model.names[[best.model.cliff.ID]],
+                                   "_norm.rds"))
 
-X_Cliff_St_K1_K2_P.df <- compute.summary.stats_St_K1_K2_P(best.model.cliff$samples, 
+X_Cliff <- compute.summary.stats_St_K_P(best.model.cliff$samples, 
                                                           seasons, 
                                                           max.days$total.days)
 
 ggplot() + 
-  geom_path(data = X_Cliff_St_K1_K2_P.df,
+  geom_path(data = X_Cliff,
             aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Cliff_St_K1_K2_P.df,
+  geom_ribbon(data = X_Cliff,
               aes(x = DOS, ymin = Low, ymax = High),
               alpha = 0.4) + 
   geom_point(data = data.1,
@@ -464,7 +472,7 @@ ggplot() +
 Now we add all values of Xs for each year
 
 ```{r}
-X_Cliff_St_K1_K2_P.df %>% 
+X_Cliff %>% 
   group_by(Season) %>%
   summarise(total.low = sum(ceiling(Low), na.rm = T),
             total.med = sum(ceiling(Med), na.rm = T),
