@@ -182,7 +182,7 @@ model.setting.list <- list(jags.parameters = jags.parameters,
                           MCMC.params = MCMC.params,
                           model.names = model.names)
 
-saveRDS(model.setting.list, file = "RData/model_setting_2020-06-17.rds")
+#saveRDS(model.setting.list, file = "RData/model_setting_2020-06-17.rds")
 
 ```
 

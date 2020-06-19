@@ -1,13 +1,12 @@
 ---
 title: "Turtlel deaths estimation using Richards functions"
-output: word_document
+output: html_notebook
 ---
 
 This document describes the method of estimating the total deaths of green turtles at Raine Islandj using counts from a few days over each nesting season. This is the same approach as when the total hatchling production was estimated. 
 
-```{r setup, include=FALSE}
+```{r}
 rm(list=ls())
-knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(ggplot2)
