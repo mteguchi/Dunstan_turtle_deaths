@@ -52,7 +52,7 @@ model{
   K1 ~ dnorm(0, 0.01)T(0,)
   K2 ~ dnorm(0, 0.01)T(0,)
   S ~ dnorm(0, 0.1)T(0,)
-  P ~ dunif(1, 100)
+  P ~ dunif(10, 150)
 
   sigma.max ~ dgamma(5, 0.1)
   tau.max <- 1/(sigma.max * sigma.max)
