@@ -154,14 +154,14 @@ LOOIC.DIC.Heat.df <-
 #   arrange(by = DIC)
 ```
 
-Models were compared using DIC and LOOIC. Both model selection criterion indicated that Model 10 (St_K1_K2_P) was best. The Rhat statistic indicated convergence was reached for all parameters (max(Rhat) < 1.1). 
+Models were compared using DIC and LOOIC. Both model selection criterion indicated that Model ```r best.model.heat.ID``` (```model.names[[best.model.heat.ID]]```) was best. The Rhat statistic indicated convergence was reached for all parameters (max(Rhat) < 1.1). 
 
 ```{r LOOIC_DIC_heat, echo=FALSE, include=TRUE}
 knitr::kable(LOOIC.DIC.Heat.df, caption = "LOOIC, their SE, DIC, and Rhat statistics for 12 models fit to the heat-related deaths of green turtles at Raine Island.")
 ```
 
 
-I used Model 10 to estimate the number of total heat-related deaths.
+I used Model ```r best.model.heat.ID``` to estimate the number of total heat-related deaths.
 
 ```{r Heat_M10_results, echo=F, cache=T, include=F}
 best.model.heat <- readRDS(paste0("RData/Richards_Heat_", 
@@ -271,16 +271,16 @@ knitr::kable(LOOIC.DIC.Cliff.df, caption = "LOOIC, their SE, DIC, and Rhat stati
 ```
 
 
-I used Model 10 to estimate the number of total heat-related deaths.
+I used Model ```r best.model.cliff.ID``` to estimate the number of total heat-related deaths.
 
 ```{r Cliff_M10_results, echo=F, cache=T, include=F}
 best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
                                    model.names[[best.model.cliff.ID]],
                                    "_norm.rds"))
 
-X_Cliff_P.df <- compute.summary.stats_St_K1_K2_P(best.model.cliff$samples, 
-                                                 seasons, 
-                                                 max.days$total.days)
+X_Cliff.df <- compute.summary.stats_St_K1_K2_P(best.model.cliff$samples, 
+                                               seasons, 
+                                               max.days$total.days)
 
 p.cliff <- ggplot() + 
   geom_path(data = X_Cliff.df,
@@ -320,7 +320,7 @@ X_Cliff.df %>%
             total.high = sum(ceiling(High), na.rm = T)) -> total.deaths.cliff
 
 write.csv(total.deaths.cliff, 
-          file = pasteo("data/total_deaths_cliff_",
+          file = paste0("data/total_deaths_cliff_",
                         model.names[[best.model.cliff.ID]], "_",
                         Sys.Date(), ".csv"))
 ```
