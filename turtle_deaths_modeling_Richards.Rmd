@@ -407,7 +407,7 @@ for (k in 1:length(model.names)){
 
 }
 
-LOOIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
+LOOIC.DIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
                                     "M7", "M8", "M9", "M10", "M11", "M12"),
                           LOOIC = unlist(lapply(loo.out.cliff, 
                                                 FUN = function(x) x$estimates["looic",
@@ -433,8 +433,10 @@ Model 8 (St_K_P) seems to be the best according to LOOIC and DIC values but the 
 
 Correction: I rerun M8 with longer chains and got them to converge (Rhat < 1.1) so using M8 for the following. 2020-06-19.
 
+Another Correction: I rerun all models with longer chains and both M10 and M8 converged (Rhat < 1.1). Results showed that M10 was better than M8. So, going back to M10. I also changed the prior for the P parameter, which is the peak DOS. The previous prior (UNIF(1,100)) showed that the posterior was pushed against the upper bound. By changing the prior to (UNIF(10, 150)), the posterior looks a lot better. 2020-06-21.
+
 ```{r}
-best.model.cliff.ID <- 8
+best.model.cliff.ID <- 10
 best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
                                         model.names[[best.model.cliff.ID]],
                                         "_norm_LOOIC.rds"))
@@ -444,16 +446,16 @@ pareto_k_table(best.model.cliff.looic)
 ```
 Although some are very bad, the majority are okay. So, I'll go with it. 
 
-We'll use Model 8 for computing the total deaths due to the heat related reasons.
+We'll use Model 10 for computing the total deaths due to the heat related reasons.
 
 ```{r}
 best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
                                    model.names[[best.model.cliff.ID]],
                                    "_norm.rds"))
 
-X_Cliff <- compute.summary.stats_St_K_P(best.model.cliff$samples, 
-                                                          seasons, 
-                                                          max.days$total.days)
+X_Cliff <- compute.summary.stats_St_K1_K2_P(best.model.cliff$samples, 
+                                            seasons, 
+                                            max.days$total.days)
 
 ggplot() + 
   geom_path(data = X_Cliff,
