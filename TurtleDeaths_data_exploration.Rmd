@@ -1,0 +1,228 @@
+---
+title: "Turtlel deaths estimation using Richards functions"
+output: word_document
+---
+
+This document describes the method of estimating the total deaths of green turtles at Raine Islandj using counts from a few days over each nesting season. This is the same approach as when the total hatchling production was estimated. 
+
+```{r setup, include=FALSE}
+rm(list=ls())
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(readr)
+library(reshape2)
+library(jagsUI)
+library(bayesplot)
+
+#source("Dunstan_functions.R")
+
+col.def <- cols(Date = col_date(format = "%m/%d/%Y"),
+                Heat = col_integer(),
+                Cliff = col_integer(),
+                Total = col_integer())
+
+# Begin and end dates for each season
+Day.begin <- "10-15"
+Day.end <- "04-30"
+# define nesting seasons - not the same as calendar years
+# also define day of season, starts on 10-15
+
+data.1 <- read_csv(file = "data/Turtle_deaths_with_zeros.csv",
+                   col_types = col.def) %>% 
+  mutate(Year = year(Date),
+         DOY = yday(Date),
+         Season = ifelse(Date >= paste0(Year, "-", Day.end), 
+                         Year, Year-1),
+         Season.f = as.factor(Season), 
+         DOS = as.numeric(Date - as.Date(paste0(Season, "-", Day.begin)))) %>%  
+  group_by(Season.f) %>%
+  mutate(Cum_Heat = cumsum(Heat),
+         Cum_Cliff = cumsum(Cliff))
+
+```
+
+Take a look at data first. Time series of heat-caused deaths:
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = Date, y = Heat),
+             color = "red") + 
+  geom_path(aes(x = Date, y = Heat),
+            color = "red") + 
+    geom_point(aes(x = Date, y = Cliff),
+               color = "blue") + 
+  geom_path(aes(x = Date, y = Cliff),
+            color = "blue", alpha = 0.6) +
+  labs(title = "Heat and Cliff fall")
+
+
+# n.days <- as.numeric(as.Date(paste0("2018-", Day2)) - as.Date(paste0("2017-", Day1)))
+# 
+# seasons <- unique(data.1$Season)
+# 
+# data.1 %>% mutate(DOSeason = as.numeric(Date - as.Date(paste0(Season, "-", Day1)))) -> data.3
+```
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = Date, y = log(Heat)),
+             color = "red") + 
+  geom_path(aes(x = Date, y = log(Heat)),
+            color = "red") + 
+    geom_point(aes(x = Date, y = log(Cliff)),
+               color = "blue") + 
+  geom_path(aes(x = Date, y = log(Cliff)),
+            color = "blue", alpha = 0.6) + 
+  labs(title = "Heat and cliff fall")
+```
+
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, 
+                 y = (Heat))) + 
+  geom_path(aes(x = DOS,
+                y = (Heat))) +
+  facet_wrap(. ~ Season)
+
+```
+
+
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, 
+                 y = (Cliff))) + 
+  geom_path(aes(x = DOS,
+                y = (Cliff))) +
+  facet_wrap(. ~ Season)
+
+```
+
+
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, 
+                 y = log(Heat+1))) + 
+  geom_path(aes(x = DOS,
+                y = log(Heat+1))) +
+  facet_wrap(. ~ Season)
+
+```
+
+
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, 
+                 y = log(Cliff+1))) + 
+  geom_path(aes(x = DOS,
+                y = log(Cliff+1))) +
+  facet_wrap(. ~ Season)
+
+```
+
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, y = Heat, color = Season.f)) + 
+  geom_path(aes(x = DOS, y = Heat, color = Season.f)) +
+  theme(legend.position = "none")
+```
+
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, y = Cliff, color = Season.f)) + 
+  geom_path(aes(x = DOS, y = Cliff, color = Season.f)) +
+  theme(legend.position = "none")
+```
+
+
+Cumulative sums
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = Date, y = Cum_Heat),
+             color = "red") + 
+  geom_path(aes(x = Date, y = Cum_Heat),
+            color = "red") + 
+    geom_point(aes(x = Date, y = Cum_Cliff),
+               color = "blue") + 
+  geom_path(aes(x = Date, y = Cum_Cliff),
+            color = "blue", alpha = 0.6) +
+  labs(title = "Heat and Cliff fall")
+```
+
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, y = Cum_Heat, color = Season.f)) + 
+  geom_path(aes(x = DOS, y = Cum_Heat, color = Season.f)) +
+  theme(legend.position = "none")
+```
+
+
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, y = Cum_Cliff, color = Season.f)) + 
+  geom_path(aes(x = DOS, y = Cum_Cliff, color = Season.f)) +
+  theme(legend.position = "none")
+```
+
+
+Cliff fall vs. heat caused deaths
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = log(Heat + 1), y = log(Cliff + 1)))
+```
+
+No obvious correlation between heat and cliff.
+
+In the natural log space
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = Date, y = log(Cum_Heat + 1)),
+             color = "red") + 
+  geom_path(aes(x = Date, y = log(Cum_Heat+1)),
+            color = "red") + 
+    geom_point(aes(x = Date, y = log(Cum_Cliff+1)),
+               color = "blue") + 
+  geom_path(aes(x = Date, y = log(Cum_Cliff+1)),
+            color = "blue", alpha = 0.6) +
+  labs(title = "Heat and Cliff fall")
+```
+
+
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, 
+                 y = log(Cum_Heat+1))) + 
+  geom_path(aes(x = DOS,
+                y = log(Cum_Heat + 1))) +
+  facet_wrap(. ~ Season)
+
+```
+
+Cliff fall
+
+```{r}
+ggplot(data = data.1) + 
+  geom_point(aes(x = DOS, 
+                 y = log(Cum_Cliff+1))) + 
+  geom_path(aes(x = DOS,
+                y = log(Cum_Cliff + 1))) +
+  facet_wrap(. ~ Season)
+
+```
+
+These data are not as clean as the hatchling production data. Maybe I can fit Richard's function to the cumulative sums. 
+

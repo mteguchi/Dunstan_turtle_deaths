@@ -24,7 +24,7 @@
 model{
 
   for (yr in 1:n.years){
-    for (j in 1:n.sectors){
+    for (j in 1:n.cause){    # cause of deaths: heat or cliff fall
        for (t in 1:n.steps){
           M1[yr,j,t] <- (1 + (2 * exp(K) - 1) * exp((1/(-S)) * (P[yr] - t))) ^ (-1/exp(K))
           M2[yr,j,t] <- (1 + (2 * exp(K) - 1) * exp((1/S) * (P[yr] - t))) ^ (-1/exp(K))

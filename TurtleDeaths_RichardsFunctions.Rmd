@@ -1,13 +1,12 @@
 ---
 title: "Turtlel deaths estimation using Richards functions"
-output: word_document
+output: html_notebook
 ---
 
 This document describes the method of estimating the total deaths of green turtles at Raine Islandj using counts from a few days over each nesting season. This is the same approach as when the total hatchling production was estimated. 
 
-```{r setup, include=FALSE}
+```{r}
 rm(list=ls())
-knitr::opts_chunk$set(echo = TRUE)
 
 library(tidyverse)
 library(ggplot2)
@@ -65,10 +64,10 @@ Cliff fall vs. heat caused deaths
 
 ```{r}
 ggplot(data = data.1) + 
-  geom_point(aes(x = Heat, y = Cliff))
+  geom_point(aes(x = (Heat), y = (Cliff)))
 ```
 
-No correlation between heat and cliff.
+No obvious correlation between heat and cliff.
 
 Look at each year separately:
 
@@ -108,19 +107,16 @@ S defines the "fatness" of the function (S > 0),
 
 K > 0 defines the "flatness" at the peak of the function (K > 0),
 
-P defines where the peak is relatvie to the range of d, where min(d) < P < max(d),
+P defines where the peak is relative to the range of d, where this is fixed at the middle of each season for this analysis because of lack of data.
 
-min_N is "the basal level of nesting outside the nesting season" and,
-
-max_N >> min_N
+min_N is "the basal level of nesting outside the nesting season," which is fixed at zero.
 
 This model was fitted to observed deaths of adult females and estimated parameters and their uncertainties were used to compute the total number of deaths and its uncertainties.  
 
 
 ```{r Model_Girondot, include=FALSE, echo=FALSE}
-jm <- readRDS(paste0("RData/Girondot_Par_estimation_dnorm_", Day1, "_", Day2, ".rds"))
-Sectors <- unique(data.3$Sector)
-Girondot_stats <- list(length = 5)
+jm <- readRDS(paste0("RData/Richards_Par_estimation_norm_", Day.begin, "_", Day.end, ".rds"))
+Richards_stats <- list(length = 5)
 i <- j <- k <- 1
 #k <- 50
 for (j in 1:length(Sectors)){

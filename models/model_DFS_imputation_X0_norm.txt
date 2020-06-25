@@ -1,0 +1,65 @@
+# JAGS model for imputing missing dead turtle counts at Raine Island
+
+# The known cyclical nature of turtle deaths is modeled by the discrete 
+# Fourier series of one period per year.  Turtle deaths start
+# October 15 and end April 30 each season.  Observed counts are 
+# limited so they are used to determine amplitude of each season
+# and for each sector.  Amplitudes for heat-related and cliff-fall deaths
+# are correlated.
+
+# Single variable normal distribution is used for each cause of death. 
+
+model{
+
+  for (yr in 1:n.years){
+      # Initial states
+      # To set the first reading almost exactly zero, rather than making 
+      # the first value a random deviate, I fix them. The output of this one
+      # is denoted with _X0_ in output filename
+      X0[yr, 1:2] <- mu.X0   
+      X[yr, 1:2, 1] <- c[day[1]] + X0[yr, 1:2]  # day 1 should be 10/15
+
+      # observation
+      y[yr, 1, 1] ~  dnorm(X[yr, 1, 1], tau.y.heat)
+      y[yr, 2, 1] ~  dnorm(X[yr, 2, 1], tau.y.cliff)
+
+      for (t in 2:n.days){
+           # state
+           X[yr, 1:2, t] <-  c[day[t]] + X[yr, 1:2, t-1]
+
+           # observation
+           y[yr, 1, t] ~ dmnorm(X[yr, 1, t], tau.y.heat)
+           y[yr, 2, t] ~ dmnorm(X[yr, 2, t], tau.y.cliff)
+                
+        }
+    }
+  
+  # c parameter defined here with a discrete Fourier function - year independent
+  # n.days = from 10/15 to 4/30. Provide it through jags.data
+  # period = n.days
+
+  for (d in 1:n.days){
+    #c.const[d] <-  2 * pi * d / n.days
+    c[d] <- beta.cos * cos(2 * pi * d / n.days) + beta.sin * sin(2 * pi * d / n.days)
+  }
+    
+  # priors
+  beta.cos ~ dnorm(0, 1)
+  beta.sin ~ dnorm(0, 1)
+  
+  #tau.y ~ dwish(R.y, k.y)
+
+  sigma.y.heat ~ dgamma(3, 0.1)
+  tau.y.heat <- 1/(sigma.y.heat * sigma.y.heat)
+  sigma.y.cliff ~ dgamma(3, 0.1)
+  tau.y.cliff <- 1/(sigma.y.cliff * sigma.y.cliff)
+  
+  #rho ~ dunif(-1, 1)
+  #Omega.y[1,1] <- sigma.heat.y * sigma.heat.y
+  #Omega.y[2,2] <- sigma.cliff.y * sigma.cliff.y
+  #Omega.y[1,2] <- rho * sigma.heat.y * sigma.cliff.y
+  #Omega.y[2,1] <- rho * sigma.heat.y * sigma.cliff.y
+  #tau.y <- inverse(Omega.y)
+
+  #Omega.y <- inverse(tau.y)
+}
