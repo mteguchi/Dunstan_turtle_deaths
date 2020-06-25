@@ -213,10 +213,11 @@ loo.out.heat <- vector(mode = "list", length = length(model.names))
 DIC.heat <- vector(mode = "numeric", length = length(model.names))
 max.Rhat.heat <- vector(mode = "numeric", length = length(model.names))
 
+k <- 1
 for (k in 1:length(model.names)){
   if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))){
     
-    if (grep("_P", model.names[[k]]) == 1){
+    if (length(grep("_P", model.names[[k]])) == 1){
       jags.data <- jags.data.Heat_P
     } else {
       jags.data <- jags.data.Heat
@@ -365,7 +366,7 @@ max.Rhat.cliff <- vector(mode = "numeric", length = length(model.names))
 for (k in 1:length(model.names)){
   
   if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))){
-    if (grep("_P", model.names[[k]]) == 1){
+    if (length(grep("_P", model.names[[k]])) == 1){
       jags.data <- jags.data.Cliff_P
     } else {
       jags.data <- jags.data.Cliff
