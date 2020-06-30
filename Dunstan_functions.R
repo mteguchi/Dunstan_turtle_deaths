@@ -256,6 +256,7 @@ compute.summary.stats_St_K1_K2_P <- function(samples, seasons, max.days){
   return(X_St_K1_K2_P.df)
 }
 
+
 compute.summary.stats_S_K1_K2 <- function(samples, seasons, max.days, P){
   
   K1 <- extract.samples("K1", samples)   # just one of these
