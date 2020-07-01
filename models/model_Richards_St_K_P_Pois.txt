@@ -19,41 +19,24 @@
 #
 # Observed counts are assumed to be normally distributed around this function.
 # 
-# In this modified version, there are two K values: K1 and K2. The M1 and
-# M2 above are modified as follows:
-#
-# M1 <- (1 + (2 * exp(K1) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K1))
-# M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S) * (P - d))) ^ (-1/exp(K2))
-#
-# The parameter S is time dependent, whereas K is fixed over time.
+# In this model, the parameter S is time dependent, whereas K is fixed over time.
 
 model{
 
   for (i in 1:n.seasons){   # year
     for (j in 1:n.vec[i]){   # days
       # state
-      M1[i, j] <- (1 + (2 * exp(K1) - 1) * exp((1/(-S[i])) * (P - t[i,j]))) ^ (-1/exp(K1))
-      M2[i, j] <- (1 + (2 * exp(K2) - 1) * exp((1/S[i]) * (P - t[i,j]))) ^ (-1/exp(K2))
+      M1[i, j] <- (1 + (2 * exp(K) - 1) * exp((1/(-S[i])) * (P - t[i,j]))) ^ (-1/exp(K))
+      M2[i, j] <- (1 + (2 * exp(K) - 1) * exp((1/S[i]) * (P - t[i,j]))) ^ (-1/exp(K))
       X[i, j] <-  max[i] * (M1[i, j] * M2[i, j])
             
       # observation
-      y[i, j] ~ dnorm(X[i, j], tau.y)
-      loglik[i,j] <- logdensity.norm(y[i,j], X[i,j], tau.y)          
-                      
+      y[i, j] ~ dpois(X[i, j])
+      loglik[i,j] <- logdensity.pois(y[i,j], X[i,j])                          
+      
     }
   }  
 
-  # Compute the total for each season
-  #for (i in 1:n.seasons){
-  #   for (j in 1:max.days[i]){
-  #      M1a[i, j] <- (1 + (2 * exp(K1) - 1) * exp((1/(-S[i])) * (P - j))) ^ (-1/exp(K1))
-  #      M2a[i, j] <- (1 + (2 * exp(K2) - 1) * exp((1/S[i]) * (P - j))) ^ (-1/exp(K2))
-  #      Xa[i, j] <-  max[i] * (M1a[i, j] * M2a[i, j])        
-  #   }
-     
-     sumXa[i] <- round(sum(Xa[i,1:max.days[i]]))
-  }
-     
   # priors
   for (yr in 1:n.seasons){
     max[yr] ~ dnorm(max.vec[yr], tau.max)T(0,)
@@ -63,13 +46,11 @@ model{
 
   }
 
-  K1 ~ dnorm(0, 0.01)T(0,)
-  K2 ~ dnorm(0, 0.01)T(0,)
+  K ~ dnorm(0, 0.01)T(0,)
   P ~ dunif(10, 150)
+
   sigma.max ~ dgamma(5, 0.1)
   tau.max <- 1/(sigma.max * sigma.max)
 
-  sigma.y ~ dgamma(1, 0.1)
-  tau.y <- 1/(sigma.y * sigma.y)
 
 }

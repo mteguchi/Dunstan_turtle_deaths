@@ -27,6 +27,9 @@
 #
 # The parameter S is time dependent, whereas K is fixed over time.
 
+# This version computes estimated deaths for the entire time series for each
+# season.
+
 model{
 
   for (i in 1:n.seasons){   # year
@@ -43,24 +46,35 @@ model{
     }
   }  
 
-  # Compute the total for each season
-  #for (i in 1:n.seasons){
-  #   for (j in 1:max.days[i]){
-  #      M1a[i, j] <- (1 + (2 * exp(K1) - 1) * exp((1/(-S[i])) * (P - j))) ^ (-1/exp(K1))
-  #      M2a[i, j] <- (1 + (2 * exp(K2) - 1) * exp((1/S[i]) * (P - j))) ^ (-1/exp(K2))
-  #      Xa[i, j] <-  max[i] * (M1a[i, j] * M2a[i, j])        
-  #   }
+
+  for (i in 1:n.seasons){
+     for (j in 1:max.days[i]){
+        M1a[i, j] <- (1 + (2 * exp(K1) - 1) * exp((1/(-S[i])) * (P - j))) ^ (-1/exp(K1))
+        M2a[i, j] <- (1 + (2 * exp(K2) - 1) * exp((1/S[i]) * (P - j))) ^ (-1/exp(K2))
+        Xa[i, j] <-  max[i] * (M1a[i, j] * M2a[i, j])        
+     }
      
      sumXa[i] <- round(sum(Xa[i,1:max.days[i]]))
-  }
      
+     # Because of the large SEs in N and large uncertainties in sumXa, the proportion 
+     # can get >> 1 when doing the math below. Somehow, sumXa needs to be constrained
+     # to some value... That means X needs to have maximum... 
+     
+     prop[i] <- exp(log(sumXa[i]) - N[i]) 
+     
+     # convert this proportion to a random variable using some sort of 
+     # distribution with sumXa and N as input. Beta is good...
+     #prop[i] ~ dbeta(sumXa[i], N[i])
+
+  }
+  
   # priors
   for (yr in 1:n.seasons){
     max[yr] ~ dnorm(max.vec[yr], tau.max)T(0,)
     S[yr] ~ dnorm(0, 0.1)T(0,)
-
-    #P[yr] ~ dunif(0, 100)
-
+    N[yr] ~ dlnorm(N.mean.log[yr], tau.N[yr])T(, 15) # exp(15) = 3269017
+    #prop[yr] ~ dbeta(1,1)
+    tau.N[yr] <- 1/(N.SE.log[yr] * N.SE.log[yr])
   }
 
   K1 ~ dnorm(0, 0.01)T(0,)
@@ -69,7 +83,8 @@ model{
   sigma.max ~ dgamma(5, 0.1)
   tau.max <- 1/(sigma.max * sigma.max)
 
-  sigma.y ~ dgamma(1, 0.1)
+  # observation SD is maxed out at 50. 
+  sigma.y ~ dgamma(2, 0.1)T(, 50)
   tau.y <- 1/(sigma.y * sigma.y)
 
 }

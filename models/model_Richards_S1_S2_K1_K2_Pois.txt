@@ -15,61 +15,54 @@
 # S > 0 and S1 = -S define the "fatness" of the function
 # K > 0 defines the "flatness" at the peak of the function
 # P defines where the peak is relatvie to the range of d min(d) < P < max(d).
+# For this analysis, I set P to the middle of the season, that is 
+# P = floor((max(d) - min(d))/2) because there is not enough data to 
+# estimate this parameter.
+# P needs to be provided through data.
 # min = 0.
 #
-# Observed counts are assumed to be normally distributed around this function.
-# 
-# In this modified version, there are two K values: K1 and K2. The M1 and
-# M2 above are modified as follows:
+# In this modified version, there are two K values (K1 and K2) and two 
+# S parameters (S1 and S2). The M1 and M2 above are modified as follows:
 #
+# S1 < 0
+# S2 > 0
 # M1 <- (1 + (2 * exp(K1) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K1))
-# M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S) * (P - d))) ^ (-1/exp(K2))
+# M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S2) * (P - d))) ^ (-1/exp(K2))
 #
-# The parameter S is time dependent, whereas K is fixed over time.
+
+
+# Observed counts are assumed to be normally distributed around this function.
 
 model{
 
   for (i in 1:n.seasons){   # year
     for (j in 1:n.vec[i]){   # days
       # state
-      M1[i, j] <- (1 + (2 * exp(K1) - 1) * exp((1/(-S[i])) * (P - t[i,j]))) ^ (-1/exp(K1))
-      M2[i, j] <- (1 + (2 * exp(K2) - 1) * exp((1/S[i]) * (P - t[i,j]))) ^ (-1/exp(K2))
+      M1[i, j] <- (1 + (2 * exp(K1) - 1) * exp((1/S1) * (P[i] - t[i,j]))) ^ (-1/exp(K1))
+      M2[i, j] <- (1 + (2 * exp(K2) - 1) * exp((1/S2) * (P[i] - t[i,j]))) ^ (-1/exp(K2))
       X[i, j] <-  max[i] * (M1[i, j] * M2[i, j])
             
       # observation
-      y[i, j] ~ dnorm(X[i, j], tau.y)
-      loglik[i,j] <- logdensity.norm(y[i,j], X[i,j], tau.y)          
-                      
+      y[i, j] ~ dpois(X[i, j])
+      loglik[i,j] <- logdensity.pois(y[i,j], X[i,j])          
+      
     }
   }  
 
-  # Compute the total for each season
-  #for (i in 1:n.seasons){
-  #   for (j in 1:max.days[i]){
-  #      M1a[i, j] <- (1 + (2 * exp(K1) - 1) * exp((1/(-S[i])) * (P - j))) ^ (-1/exp(K1))
-  #      M2a[i, j] <- (1 + (2 * exp(K2) - 1) * exp((1/S[i]) * (P - j))) ^ (-1/exp(K2))
-  #      Xa[i, j] <-  max[i] * (M1a[i, j] * M2a[i, j])        
-  #   }
-     
-     sumXa[i] <- round(sum(Xa[i,1:max.days[i]]))
-  }
-     
   # priors
   for (yr in 1:n.seasons){
     max[yr] ~ dnorm(max.vec[yr], tau.max)T(0,)
-    S[yr] ~ dnorm(0, 0.1)T(0,)
-
+    
     #P[yr] ~ dunif(0, 100)
 
   }
 
   K1 ~ dnorm(0, 0.01)T(0,)
   K2 ~ dnorm(0, 0.01)T(0,)
-  P ~ dunif(10, 150)
+  S1 ~ dnorm(0, 0.1)T(,0)
+  S2 ~ dnorm(0, 0.1)T(0,)
+
   sigma.max ~ dgamma(5, 0.1)
   tau.max <- 1/(sigma.max * sigma.max)
-
-  sigma.y ~ dgamma(1, 0.1)
-  tau.y <- 1/(sigma.y * sigma.y)
 
 }

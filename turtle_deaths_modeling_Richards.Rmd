@@ -148,10 +148,14 @@ MCMC.params <- list(n.chains = 4,
 
 n.per.chain <- (MCMC.params$n.samples - MCMC.params$n.burnin)/MCMC.params$n.thin
 
-model.names <- c("S_K", "St_K", "S_K1_K2",
-                 "St_K1_K2", "S1_S2_K", "S1_S2_K1_K2",
-                 "S_K_P", "St_K_P", "S_K1_K2_P",
-                 "St_K1_K2_P", "S1_S2_K_P", "S1_S2_K1_K2_P")
+model.names <- c("S_K_norm", "St_K_norm", "S_K1_K2_norm",
+                 "St_K1_K2_norm", "S1_S2_K_norm", "S1_S2_K1_K2_norm",
+                 "S_K_P_norm", "St_K_P_norm", "S_K1_K2_P_norm",
+                 "St_K1_K2_P_norm", "S1_S2_K_P_norm", "S1_S2_K1_K2_P_norm",
+                 "S_K_Pois", "St_K_Pois", "S_K1_K2_Pois",
+                 "St_K1_K2_Pois", "S1_S2_K_Pois", "S1_S2_K1_K2_Pois",
+                 "S_K_P_Pois", "St_K_P_Pois", "S_K1_K2_P_Pois",
+                 "St_K1_K2_P_Pois", "S1_S2_K_P_Pois", "S1_S2_K1_K2_P_Pois")
 
 jags.parameters <- list(c("sigma.y", "S", "K", "max",
                           "y", "X", "sigma.max", "deviance", "loglik"),
@@ -176,13 +180,37 @@ jags.parameters <- list(c("sigma.y", "S", "K", "max",
                         c("sigma.y", "S1", "S2", "K", "P", "max",
                           "y", "X", "sigma.max", "deviance", "loglik"),
                         c("sigma.y", "S1", "S2", "K1", "K2", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("S", "K", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S", "K", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S", "K1", "K2", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S", "K1", "K2", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("S1", "S2", "K", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S1", "S2", "K1", "K2", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S", "K", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S", "K", "P","max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S", "K1", "K2", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S", "K1", "K2", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S1", "S2", "K", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c( "S1", "S2", "K1", "K2", "P", "max",
                           "y", "X", "sigma.max", "deviance", "loglik"))
 
 model.setting.list <- list(jags.parameters = jags.parameters,
-                          MCMC.params = MCMC.params,
-                          model.names = model.names)
+                           MCMC.params = MCMC.params,
+                           model.names = model.names)
 
-#saveRDS(model.setting.list, file = "RData/model_setting_2020-06-17.rds")
+saveRDS(model.setting.list, file = paste0("RData/model_setting_", Sys.Date(), ".rds"))
 
 ```
 
@@ -213,9 +241,9 @@ loo.out.heat <- vector(mode = "list", length = length(model.names))
 DIC.heat <- vector(mode = "numeric", length = length(model.names))
 max.Rhat.heat <- vector(mode = "numeric", length = length(model.names))
 
-k <- 1
+c <- k <- 1
 for (k in 1:length(model.names)){
-  if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))){
+  if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], ".rds"))){
     
     if (length(grep("_P", model.names[[k]])) == 1){
       jags.data <- jags.data.Heat_P
@@ -226,14 +254,14 @@ for (k in 1:length(model.names)){
     M1.Heat <- jags(jags.data,
                     inits = NULL,
                     parameters.to.save= jags.parameters[[k]],
-                    model.file = paste0("models/model_Richards_", model.names[[k]], "_norm.txt"),
+                    model.file = paste0("models/model_Richards_", model.names[[k]], ".txt"),
                     n.chains = MCMC.params$n.chains,
                     n.burnin = MCMC.params$n.burnin,
                     n.thin = MCMC.params$n.thin,
                     n.iter = MCMC.params$n.samples,
                     DIC = T, parallel=T)
     
-    saveRDS(M1.Heat, paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))
+    saveRDS(M1.Heat, paste0("RData/Richards_Heat_", model.names[[k]], ".rds"))
     
   } else {
     M1.Heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))
@@ -242,16 +270,16 @@ for (k in 1:length(model.names)){
   DIC.heat[k] <- M1.Heat$DIC
   max.Rhat.heat[k] <- data.frame(M1.Heat$summary) %>% select(Rhat) %>% max(na.rm = T)
   
-  if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_norm_LOOIC.rds"))){
+  if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], "_LOOIC.rds"))){
     loo.out.heat[[k]] <- compute.looic(loglik = M1.Heat$sims.list$loglik,
                                        data.vector = data.heat.vector,
                                        MCMC.params = MCMC.params)
     
     saveRDS(loo.out.heat[[k]], paste0("RData/Richards_Heat_", model.names[[k]], 
-                                      "_norm_LOOIC.rds"))
+                                      "_LOOIC.rds"))
   } else {
     loo.out.heat[[k]] <- readRDS(paste0("RData/Richards_Heat_", 
-                                        model.names[[k]], "_norm_LOOIC.rds"))
+                                        model.names[[k]], "_LOOIC.rds"))
   }
 
 }
