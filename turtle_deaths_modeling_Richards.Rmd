@@ -210,7 +210,7 @@ model.setting.list <- list(jags.parameters = jags.parameters,
                            MCMC.params = MCMC.params,
                            model.names = model.names)
 
-saveRDS(model.setting.list, file = paste0("RData/model_setting_", Sys.Date(), ".rds"))
+#saveRDS(model.setting.list, file = paste0("RData/model_setting_", Sys.Date(), ".rds"))
 
 ```
 
@@ -245,7 +245,7 @@ c <- k <- 1
 for (k in 1:length(model.names)){
   if (!file.exists(paste0("RData/Richards_Heat_", model.names[[k]], ".rds"))){
     
-    if (length(grep("_P", model.names[[k]])) == 1){
+    if (length(grep("_P_", model.names[[k]])) == 1){
       jags.data <- jags.data.Heat_P
     } else {
       jags.data <- jags.data.Heat
@@ -264,7 +264,7 @@ for (k in 1:length(model.names)){
     saveRDS(M1.Heat, paste0("RData/Richards_Heat_", model.names[[k]], ".rds"))
     
   } else {
-    M1.Heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[k]], "_norm.rds"))
+    M1.Heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[k]], ".rds"))
   }
 
   DIC.heat[k] <- M1.Heat$DIC
@@ -285,7 +285,9 @@ for (k in 1:length(model.names)){
 }
 
 LOOIC.DIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
-                                   "M7", "M8", "M9", "M10", "M11", "M12"),
+                                   "M7", "M8", "M9", "M10", "M11", "M12",
+                                   "M13", "M14", "M15", "M16", "M17", "M18",
+                                   "M19", "M20", "M21", "M22", "M23", "M24"),
                          LOOIC = unlist(lapply(loo.out.heat, 
                                                FUN = function(x) x$estimates["looic",
                                                                              "Estimate"])),
@@ -303,12 +305,12 @@ LOOIC.DIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
 #  arrange(by = DIC)
 ```
 
-Model 10 (St_K1_K2_P) seems to be the best according to LOOIC and DIC values. Convergence was reached for all parameters as well (max.Rhat < 1.1). Pareto k statistics look okay also...
+Model 22 (St_K1_K2_P_Pois) seems to be the best according to LOOIC and DIC values. Convergence was reached for all parameters as well (max.Rhat < 1.1). Pareto k statistics look okay also...
 
 ```{r}
 
 best.model.heat.looic <- readRDS(paste0("RData/Richards_Heat_", 
-                                        model.names[[10]], "_norm_LOOIC.rds"))
+                                        model.names[[22]], "_LOOIC.rds"))
 
 pareto_k_table(best.model.heat.looic)
     
@@ -318,9 +320,7 @@ There are some bad data points... but we'll use this model for computing the tot
 First, take a look at the convergence of the P parameter.
 
 ```{r}
-best.model.heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[10]], "_norm.rds"))
-
-# According to Rhat statistics, convergence reached for all. 
+best.model.heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[22]], ".rds"))
 
 mcmc_trace(best.model.heat$samples, "P")
 ```
@@ -337,14 +337,14 @@ I wonder if we need more MCMC steps... or it's possible that they are different 
 
 ```{r}
 
-X_Heat_St_K1_K2_P.df <- compute.summary.stats_St_K1_K2_P(best.model.heat$samples, 
-                                                         seasons, 
-                                                         max.days$total.days)
+X_Heat_St_K1_K2_P <- compute.summary.stats_St_K1_K2_P(best.model.heat$samples, 
+                                                      seasons, 
+                                                      max.days$total.days)
 
 ggplot() + 
-  geom_path(data = X_Heat_St_K1_K2_P.df,
+  geom_path(data = X_Heat_St_K1_K2_P$X.df,
             aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Heat_St_K1_K2_P.df,
+  geom_ribbon(data = X_Heat_St_K1_K2_P$X.df,
               aes(x = DOS, ymin = Low, ymax = High),
               alpha = 0.4) + 
   geom_point(data = data.1,
@@ -357,7 +357,7 @@ ggplot() +
 Now we add all values of Xs for each year
 
 ```{r}
-X_Heat_St_K1_K2_P.df %>% 
+X_Heat_St_K1_K2_P$X.df %>% 
   group_by(Season) %>%
   summarise(total.low = sum(ceiling(Low), na.rm = T),
             total.med = sum(ceiling(Med), na.rm = T),
@@ -368,6 +368,11 @@ X_Heat_St_K1_K2_P.df %>%
 Same can be done for cliff fall deaths:
 
 ```{r}
+MCMC.params <- list(n.chains = 4,
+                    n.samples = 100000,
+                    n.burnin = 60000,
+                    n.thin = 5)
+
 # first just run one at a time
 jags.data.Cliff <- list(y = (obs.y.1[,,2]),
                        t = obs.t,
@@ -393,8 +398,8 @@ max.Rhat.cliff <- vector(mode = "numeric", length = length(model.names))
 
 for (k in 1:length(model.names)){
   
-  if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))){
-    if (length(grep("_P", model.names[[k]])) == 1){
+  if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], ".rds"))){
+    if (length(grep("_P_", model.names[[k]])) == 1){
       jags.data <- jags.data.Cliff_P
     } else {
       jags.data <- jags.data.Cliff
@@ -404,23 +409,23 @@ for (k in 1:length(model.names)){
                      inits = NULL,
                      parameters.to.save= jags.parameters[[k]],
                      model.file = paste0("models/model_Richards_", 
-                                         model.names[[k]], "_norm.txt"),
+                                         model.names[[k]], ".txt"),
                      n.chains = MCMC.params$n.chains,
                      n.burnin = MCMC.params$n.burnin,
                      n.thin = MCMC.params$n.thin,
                      n.iter = MCMC.params$n.samples,
                      DIC = T, parallel=T)
     
-    saveRDS(M1.Cliff, paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))
+    saveRDS(M1.Cliff, paste0("RData/Richards_Cliff_", model.names[[k]], ".rds"))
     
   } else {
-    M1.Cliff <- readRDS(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm.rds"))
+    M1.Cliff <- readRDS(paste0("RData/Richards_Cliff_", model.names[[k]], ".rds"))
   }
   
   DIC.cliff[k] <- M1.Cliff$DIC
   max.Rhat.cliff[k] <- data.frame(M1.Cliff$summary) %>% select(Rhat) %>% max(na.rm = TRUE)
   
-  if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_norm_LOOIC.rds"))){
+  if (!file.exists(paste0("RData/Richards_Cliff_", model.names[[k]], "_LOOIC.rds"))){
     #data.cliff.
     
     loo.out.cliff[[k]] <- compute.looic(loglik = M1.Cliff$sims.list$loglik,
@@ -428,16 +433,18 @@ for (k in 1:length(model.names)){
                                         MCMC.params = MCMC.params)
     
     saveRDS(loo.out.cliff[[k]], paste0("RData/Richards_Cliff_", model.names[[k]], 
-                                       "_norm_LOOIC.rds"))
+                                       "_LOOIC.rds"))
   } else {
     loo.out.cliff[[k]] <- readRDS(paste0("RData/Richards_Cliff_", 
-                                         model.names[[k]], "_norm_LOOIC.rds"))
+                                         model.names[[k]], "_LOOIC.rds"))
   }
 
 }
 
 LOOIC.DIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
-                                    "M7", "M8", "M9", "M10", "M11", "M12"),
+                                    "M7", "M8", "M9", "M10", "M11", "M12",
+                                    "M13", "M14", "M15", "M16", "M17", "M18",
+                                   "M19", "M20", "M21", "M22", "M23", "M24"),
                           LOOIC = unlist(lapply(loo.out.cliff, 
                                                 FUN = function(x) x$estimates["looic",
                                                                               "Estimate"])),
@@ -458,17 +465,17 @@ LOOIC.DIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
 ```
 
 
-Model 8 (St_K_P) seems to be the best according to LOOIC and DIC values but the convergence is an issue. I can increase the MCMC sample size later. For now, I'll use the second best (Model 10) for this time. Pareto k statistics look okay also...  
+Model 22 (St_K1_K2_P_Pois) seems to be the best according to LOOIC and DIC values but the convergence is an issue. I can increase the MCMC sample size later. For now, I'll use the first one with convergence  (Model 16) for this time. Pareto k statistics look okay also...  
 
 Correction: I rerun M8 with longer chains and got them to converge (Rhat < 1.1) so using M8 for the following. 2020-06-19.
 
 Another Correction: I rerun all models with longer chains and both M10 and M8 converged (Rhat < 1.1). Results showed that M10 was better than M8. So, going back to M10. I also changed the prior for the P parameter, which is the peak DOS. The previous prior (UNIF(1,100)) showed that the posterior was pushed against the upper bound. By changing the prior to (UNIF(10, 150)), the posterior looks a lot better. 2020-06-21.
 
 ```{r}
-best.model.cliff.ID <- 10
+best.model.cliff.ID <- 16
 best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
                                         model.names[[best.model.cliff.ID]],
-                                        "_norm_LOOIC.rds"))
+                                        "_LOOIC.rds"))
 
 pareto_k_table(best.model.cliff.looic)
     
@@ -480,7 +487,7 @@ We'll use Model 10 for computing the total deaths due to the heat related reason
 ```{r}
 best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
                                    model.names[[best.model.cliff.ID]],
-                                   "_norm.rds"))
+                                   ".rds"))
 
 X_Cliff <- compute.summary.stats_St_K1_K2_P(best.model.cliff$samples, 
                                             seasons, 

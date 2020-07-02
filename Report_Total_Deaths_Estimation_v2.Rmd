@@ -1,0 +1,521 @@
+---
+title: "Estimating total deaths of adult female green turtles at Raine Island"
+author: "Tomo Eguchi"
+date: "6/18/2020"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+rm(list=ls())
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(readr)
+library(reshape2)
+library(jagsUI)
+library(bayesplot)
+library(loo)
+
+save.fig <- F
+save.file <- F
+run.date <- "2020-06-24"
+
+source("Dunstan_functions.R")
+best.model.heat.ID <- 10
+best.model.cliff.ID <- 10
+```
+
+## Introduction
+
+Determining the number of deaths of green turtles at Raine Island is important in understanding the effects of these deaths on the population, as well as for investing in measures to decrease the deaths. In this document, I used data on observed deaths from periodical surveys of the island to estimate the total deaths for each nesting season. 
+
+## Methods
+
+```{r get.data, echo=F, include=F, cache=T}
+Day.begin <- "10-15"
+Day.end <- "04-30"
+
+data.1 <- read_csv(file = "data/Turtle_deaths_with_zeros.csv",
+                   col_types = cols(Date = col_date(format = "%m/%d/%Y"),
+                                    Heat = col_integer(),
+                                    Cliff = col_integer(),
+                                    Total = col_integer())) %>%
+  mutate(Year = year(Date),
+         DOY = yday(Date),
+         Season = ifelse(Date >= paste0(Year, "-", Day.end), 
+                         Year, Year-1),
+         Season.f = as.factor(Season), 
+         DOS = as.numeric(Date - as.Date(paste0(Season, "-", Day.begin)))) %>%  
+  group_by(Season.f) %>%
+  mutate(Cum_Heat = cumsum(Heat),
+         Cum_Cliff = cumsum(Cliff))
+
+# # find the number of days between Day1 and Day2
+# n.days <- as.numeric(as.Date(paste0("2018-", Day.end)) - as.Date(paste0("2017-", Day.begin)))
+
+seasons <- unique(data.1$Season)
+
+n.seasons <- length(unique(data.1$Season))
+
+max.days <- data.1 %>% 
+  group_by(Season.f) %>% 
+  summarise(total.days = max(DOS),
+            n.days = n()) 
+
+# data.2 has estimated total abundance on the island
+data.2 <- read_csv(file = "data/Nhat_Drone.csv",
+                   col_types = cols(Season = col_integer(),
+                                    N_surveys = col_integer(),
+                                    PI = col_double(),
+                                    SE = col_double(),
+                                    Mean_Tally = col_double()))
+```
+
+
+The dataset for this analysis contained the observed deaths of female green turtles at Raine Island from the 1995 to 2019 season. The dataset included presumed zeros at the beginning (October 16 - October 20) and end of each nesting season (April 1 - April 5). Observations were made only when a research team was present on the island. The number of trips per season varied over the years (Figure 1). Cause of deaths were grouped into either "heat-related" or "cliff-fall."  
+
+```{r plot_observed, cache=T, include=T, echo=F}
+data.1 %>% ungroup() %>%
+  select(Date, Heat, Cliff) %>%
+  gather(cause, count, Heat, Cliff) -> data.1.2
+
+p.obsd <- ggplot(data = data.1.2) + 
+  geom_point(aes(x = Date, y = count, color = cause),
+             alpha = 0.5) + 
+  geom_path(aes(x = Date, y = count, color = cause),
+            alpha = 0.6) +
+  theme(legend.title = element_blank(),
+        legend.position = c(0.8, 0.7)) + 
+  scale_color_manual(values = c("Cliff" = "blue",
+                                "Heat" = "red")) + 
+  labs(title = "Heat and Cliff fall") 
+
+#p.obsd
+
+if (save.fig)
+  ggsave(plot = p.obsd,
+         filename = "figures/observed_deaths.png", 
+         device = "png",
+         dpi = 600)
+
+
+```
+
+
+```{r plot_obsd, echo=FALSE, cache=TRUE, fig.cap = "Figure 1. Observed deaths of green turtle females from heat-related and cliff-fall causes at Raine Island."}
+knitr::include_graphics(paste0("figures/observed_deaths.png"))
+```
+
+
+In order to estimate the number of unobserved deaths from the two causes (i.e., heat-related or cliff-fall), within each season, I fitted parametric functions to the data using the state-space approach. The state space is modeled by modified versions of Richards function, whereas the observations are assumed to be distributed normally around the functions. Modification of the Richards function represent varying assumptions of the underlying process. In total, 12 models were constructed. The base function has the following form (Girondot et al. 2007).
+
+M1 = (1 + (2 * exp(K) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K))
+
+M2 = (1 + (2 * exp(K) - 1) * exp((1/S) * (P - d))) ^ (-1/exp(K))
+
+N = min + (max - min) * (M1 * M2)
+
+S1 = -S
+
+d = the number of days from the beginning of nesting season
+
+S > 0 defines the "fatness" of the function
+
+K > 0 defines the "flatness" at the peak of the function
+
+P defines where the peak is relative to the range of d min(d) < P < max(d).
+
+min = 0.
+
+max = the maximum number of deaths per day.
+
+Model 1: S and K are constants (S_K)
+
+Model 2: S is season dependent, whereas K is constant (St_K)
+
+Model 3: S is constant, whereas K for M1 and M2 are different (S_K1_K2)
+
+Model 4: S is season dependent, whereas K for M1 and M2 are different (St_K1_K2)
+
+Model 5: absolute values of S and S1 are not the same (creates a non-symmetrical function), whereas K is constant (S1_S2_K)
+
+Model 6: absolute values of S and S1 are not the same, whereas K for M1 and M2 are different (S1_S2_K1_K2)
+
+For Models 7 through 12, I let P to be another parameter to be estimated. They are named +_P, where + is one of the model names above. 
+
+Varying K by season resulted in non-convergence. Consequently, time dependent K models were not considered. 
+
+No correlation was found between the numbers of heat-related and cliff-fall deaths. Consequently, these data were modeled separately.  (In retrospect, I could have modeled them together to increase the signal to estimate P with more precision, assuming that they peak at the same time.)
+
+## Results
+
+```{r load_model_setting, include=FALSE}
+model.setting.list <- readRDS(file = "RData/model_setting_2020-06-17.rds")
+
+model.names <- model.setting.list$model.names
+MCMC.params <- model.setting.list$MCMC.params
+
+```
+
+### Heat-related deaths
+
+```{r heat_output, include=FALSE, echo=FALSE, cache=TRUE}
+
+loo.out.heat <- vector(mode = "list", length = length(model.names))
+DIC.heat <- max.Rhat.heat <-vector(mode = "numeric", length = length(model.names))
+
+for (k in 1:length(model.names)){
+    M1.Heat <- readRDS(paste0("RData/Richards_Heat_", 
+                              model.names[[k]], "_norm.rds"))
+    
+    DIC.heat[k] <- M1.Heat$DIC
+    max.Rhat.heat[k] <- data.frame(M1.Heat$summary) %>% 
+      select(Rhat) %>% max(na.rm = T)
+  
+    loo.out.heat[[k]] <- readRDS(paste0("RData/Richards_Heat_", 
+                                        model.names[[k]], "_norm_LOOIC.rds"))
+}
+
+LOOIC.DIC.Heat.df <- 
+  data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
+                       "M7", "M8", "M9", "M10", "M11", "M12"),
+             LOOIC = unlist(lapply(loo.out.heat, 
+                                   FUN = function(x) x$estimates["looic",                                 "Estimate"])),
+             SE = unlist(lapply(loo.out.heat, 
+                                FUN = function(x) x$estimates["looic",
+                                                              "SE"])),
+             DIC = DIC.heat,
+             
+             Rhat = max.Rhat.heat) %>%
+  arrange(by = LOOIC)
+
+# A quick look at DICs
+# DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
+#                                     "M7", "M8", "M9", "M10", "M11", "M12"),
+#                             Rhat = max.Rhat.heat) %>%
+#   arrange(by = DIC)
+```
+
+Models were compared using DIC and LOOIC. Both model selection criterion indicated that Model ```r best.model.heat.ID``` (```model.names[[best.model.heat.ID]]```) was best. The Rhat statistic indicated convergence was reached for all parameters (max(Rhat) < 1.1). 
+
+```{r LOOIC_DIC_heat, echo=FALSE, include=TRUE}
+knitr::kable(LOOIC.DIC.Heat.df, digits = 2,
+             caption = "LOOIC, their SE, DIC, and Rhat statistics for 12 models fit to the heat-related deaths of green turtles at Raine Island.")
+```
+
+
+I used Model ```r best.model.heat.ID``` to estimate the number of total heat-related deaths.
+
+```{r Heat_M10_results, echo=F, cache=T, include=F}
+best.model.heat <- readRDS(paste0("RData/Richards_Heat_", 
+                                  model.names[[best.model.heat.ID]],
+                                  "_norm.rds"))
+
+X_Heat <-
+  compute.summary.stats_St_K1_K2_P(samples = best.model.heat$samples, 
+                                   seasons = seasons, 
+                                   total.days = max.days$total.days)
+
+p.heat <- ggplot() + 
+  geom_path(data = X_Heat$X.df,
+            aes(x = DOS, y = Med)) +
+  geom_ribbon(data = X_Heat$X.df,
+              aes(x = DOS, ymin = Low, ymax = High),
+              alpha = 0.4) + 
+  geom_point(data = data.1,
+             aes(x = DOS, y = Heat)) + 
+  facet_wrap(.~ as.factor(Season)) + 
+  labs(x = "Day of season", y = "# heat-related deaths")
+
+if (save.fig)
+  ggsave(filename = paste0("figures/heat_facet_",
+                           model.names[[best.model.heat.ID]], "_", 
+                           Sys.Date(), ".png"), 
+         plot = p.heat, device = "png",
+         dpi = 600, width = 5.8, height = 5.8)
+
+```
+
+
+```{r plot_heat, echo=FALSE, cache=TRUE, fig.cap = "Figure 1. Fitted functions for heat-related deaths at Raine Island"}
+knitr::include_graphics(paste0("figures/heat_facet_",
+                         model.names[[best.model.heat.ID]], "_", 
+                         run.date, ".png"))
+```
+
+The estimated P (the peak of heat-related deaths) indicated that the mean of ```r round(best.model.heat$mean$P)``` with the SE of ```r signif(best.model.heat$sd$P, digit = 3)```, where its 95% CI ranged from ```r signif(best.model.heat$q2.5$P, digit = 3)``` to ```r signif(best.model.heat$q97.5$P, digit = 3)```.  
+
+Using the estimated values, I added estimated daily deaths within each season. 
+```{r estimated_heat_deaths, echo=F, include=T, cache=T}
+data.frame(Season = seasons,
+           total.low = unlist(lapply(X_Heat$X.season.sums, FUN = quantile, 0.025)),
+           total.med = unlist(lapply(X_Heat$X.season.sums, FUN = quantile, 0.50)),
+           total.high = unlist(lapply(X_Heat$X.season.sums, FUN = quantile,0.975))) %>%
+  left_join(data.2, by = "Season") %>%
+  mutate(Pre2012 = ifelse(Season < 2012, 1, 0)) -> total.deaths.heat
+
+if (save.file)
+  write.csv(total.deaths.heat, 
+            file = paste0("data/total_deaths_heat_",
+                          model.names[[best.model.heat.ID]], "_",
+                          Sys.Date(), ".csv"))
+
+p.NvsDeaths.heat <- ggplot(data = total.deaths.heat) + 
+  geom_errorbar(aes(x = PI, ymin = total.low, ymax = total.high)) +
+  geom_errorbarh(aes(y = total.med, xmin = PI - 2*SE, xmax = PI + 2*SE)) +
+  geom_point(aes(x = PI, y = total.med, color = as.factor(Pre2012))) +
+  scale_color_manual(labels = c("2012 - 2019", "pre 2012"),
+                     values = c("0" = "blue",
+                                "1" = "gold")) + 
+  theme(legend.title = element_blank()) + 
+  
+  labs(x = "Total abundance", y = "Total heat related deaths")
+  
+if (save.fig){
+  ggsave(filename = "figures/NvsDeaths_heat.png", p.NvsDeaths.heat,
+         dpi = 600, device = "png")
+}
+```
+
+Then plot the relationship between the estimated abundance and estimated deaths including the uncertainty.
+
+```{r plot_NvsDeaths_heat, echo=FALSE, cache=TRUE, fig.cap = "Figure x. The relationship between estimated total abundance and heat-related deaths. Erro bars indicate 95% CI."}
+knitr::include_graphics("figures/NvsDeaths_heat.png")
+```
+
+We are trying to figure out the effects of fencing - did we save any turtles by erecting the fencing? We need to compute the proportions of turtles that were dying from heat-related causes before and after the fencing was installed. If the proportion is smaller after the fence installation, we can conclude that the fencing decreased the deaths. 
+
+So... how can I do that? We have a large uncertainty around each PI (a measure of abundance). For the sake of argument, let's assume that these are normally distributed - we only have a point estimate and SE for each year. The total deaths are represented in medians and 95% CIs. Even though observed deaths each day were assumed to be normally distributed, the total over a season does not have any distributional assumption. The CIs are not symmetric around the medians, which indicate the non-normal nature of these values... So, we need to extract the distribution of sum of deaths from the posteriors.  
+
+```{r prop_heat_deaths, echo=F, cache=T, include=T}
+p.heat.deaths <- vector(mode = "list", length = n.seasons)
+
+for (k in 1:n.seasons){
+  if (!is.na(total.deaths.heat[k, "PI"])){
+    # create a distribution of abundance
+    N.season <- rnorm(n = length(X_Heat$X.season.sums[[1]]), 
+                      mean = total.deaths.heat[k, "PI"],
+                      sd = total.deaths.heat[k, "SE"])
+    p.heat.deaths[[k]] <- X_Heat$X.season.sums[[k]]/N.season
+  }
+}
+
+p.heat.deaths.summary <- data.frame(Season = seasons,
+                                    Low = unlist(lapply(p.heat.deaths, FUN = quantile, 0.025)),
+                                    Med = unlist(lapply(p.heat.deaths, FUN = quantile, 0.50)),
+                                    High = unlist(lapply(p.heat.deaths, FUN = quantile, 0.975))) %>%
+  left_join(total.deaths.heat, by = "Season")
+
+p.heat.deaths.summary.mod <- p.heat.deaths.summary
+p.heat.deaths.summary.mod[which(p.heat.deaths.summary$Low < 0), "Low"] <- 0
+p.heat.deaths.summary.mod[which(p.heat.deaths.summary$High > 1), "High"] <- 1
+
+p.prop.heat <- ggplot() + 
+  geom_path(data = p.heat.deaths.summary.mod,
+            aes(x = Season, y = Med)) +
+  geom_ribbon(data = p.heat.deaths.summary.mod,
+              aes(x = Season, ymin = Low, ymax = High),
+              alpha = 0.4) + 
+  labs(x = "Season", y = "Proportion of heat-related deaths")
+
+if (save.fig)
+  ggsave(filename = "figures/prop_deaths_heat.png", 
+         plot = p.prop.heat,
+         device = "png", dpi = 600)
+#p.prop.heat
+```
+
+
+```{r plot_prop_heat, echo=FALSE, cache=TRUE, fig.cap = "Figure x. Changes in proportion of heat-related deaths over time. Gray band indicates approximate 95% CIs."}
+knitr::include_graphics("figures/prop_deaths_heat.png")
+```
+
+
+```{r heat_death_table, echo=FALSE, include=TRUE}
+knitr::kable(p.heat.deaths.summary.mod %>% select(Season, total.low, total.med, total.high, Low, Med, High), 
+             digits = c(1,1,1,1,2,2,2),
+             col.names = c("Season", "N (2.5%)", "N (50%)", "N (97.5%)", "P (2.5%)", "P (50%)", "P (97.5%)"),
+             caption = "The estimated number of heat-related deaths of green turtles at Raine Island. N is the estimated number of deaths and P is the proportion of deaths relative to the total abundance")
+
+```
+
+
+### Cliff-fall deaths
+
+```{r cliff_output, include=FALSE, echo=FALSE, cache=TRUE}
+
+loo.out.cliff <- vector(mode = "list", length = length(model.names))
+DIC.cliff <- max.Rhat.cliff <- vector(mode = "numeric", 
+                                      length = length(model.names))
+
+for (k in 1:length(model.names)){
+    M1.Cliff <- readRDS(paste0("RData/Richards_Heat_", 
+                               model.names[[k]], "_norm.rds"))
+    
+    DIC.cliff[k] <- M1.Cliff$DIC
+    max.Rhat.cliff[k] <- data.frame(M1.Cliff$summary) %>% 
+      select(Rhat) %>% max(na.rm = T)
+  
+    loo.out.cliff[[k]] <- readRDS(paste0("RData/Richards_Cliff_", 
+                                        model.names[[k]], "_norm_LOOIC.rds"))
+}
+
+LOOIC.DIC.Cliff.df <- 
+  data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
+                       "M7", "M8", "M9", "M10", "M11", "M12"),
+             LOOIC = unlist(lapply(loo.out.cliff, 
+                                   FUN = function(x) x$estimates["looic",
+                                                                 "Estimate"])),
+             SE = unlist(lapply(loo.out.cliff, 
+                                FUN = function(x) x$estimates["looic",
+                                                              "SE"])),
+             DIC = DIC.cliff,
+             Rhat = max.Rhat.cliff) %>%
+  arrange(by = LOOIC)
+
+```
+
+Models were compared using DIC and LOOIC. Model 8 (St_K_P) seems to be the best according to LOOIC and DIC values but the convergence is an issue (Rhat > 1.1). I can increase the MCMC sample size later to see that will alleviate the problem. For now, I'll use the second best (Model 10). 
+
+Correction: I rerun M8 with longer chains and got them to converge (Rhat < 1.1) so using M8 for the following. 2020-06-19.
+
+Another Correction: I rerun all models with longer chains and both M10 and M8 converged (Rhat < 1.1). Results showed that M10 was better than M8. So, going back to M10. I also changed the prior for the P parameter, which is the peak DOS. The previous prior (UNIF(1,100)) showed that the posterior was pushed against the upper bound. By changing the prior to (UNIF(10, 150)), the posterior looks a lot better. 2020-06-21.
+
+
+```{r LOOIC_DIC_cliff, echo=FALSE, include=TRUE}
+knitr::kable(LOOIC.DIC.Cliff.df, digits = 2,
+             caption = "LOOIC, their SE, DIC, and Rhat statistics for 12 models fit to the cliff-fall deaths of green turtles at Raine Island.")
+```
+
+
+I used Model ```r best.model.cliff.ID``` to estimate the number of total heat-related deaths.
+
+```{r Cliff_M10_results, echo=F, cache=T, include=F}
+best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
+                                   model.names[[best.model.cliff.ID]],
+                                   "_norm.rds"))
+
+X_Cliff <- compute.summary.stats_St_K1_K2_P(samples = best.model.cliff$samples, 
+                                                 seasons = seasons, 
+                                                 total.days = max.days$total.days)
+
+p.cliff <- ggplot() + 
+  geom_path(data = X_Cliff$X.df,
+            aes(x = DOS, y = Med)) +
+  geom_ribbon(data = X_Cliff$X.df,
+              aes(x = DOS, ymin = Low, ymax = High),
+              alpha = 0.4) + 
+  geom_point(data = data.1,
+             aes(x = DOS, y = Cliff)) + 
+  facet_wrap(.~ as.factor(Season)) + 
+  labs(x = "Day of season", y = "# cliff-fall deaths")
+
+if (save.fig)
+  ggsave(filename = paste0("figures/cliff_facet_", 
+                           model.names[[best.model.cliff.ID]], "_", 
+                           Sys.Date(), ".png"), 
+         plot = p.cliff, device = "png",
+         dpi = 600, height = 5.8, width = 5.8)
+
+```
+
+
+```{r plot_cliff, echo=FALSE, cache=TRUE, fig.cap = "Figure 2. Fitted functions for cliff-fall deaths at Raine Island"}
+knitr::include_graphics( paste0("figures/cliff_facet_", 
+                         model.names[[best.model.cliff.ID]], "_", 
+                         run.date, ".png"))
+```
+
+The estimated P (the peak of cliff-fall deaths) indicated that the mean of ```r round(best.model.cliff$mean$P)``` with the SE of ```r signif(best.model.cliff$sd$P, digit = 3)```, where its 95% CI ranged from ```r signif(best.model.cliff$q2.5$P, digit = 3)``` to ```r signif(best.model.cliff$q97.5$P, digit = 3)```.  
+
+Using the estimated values, I added estimated daily deaths within each season. 
+```{r estimated_cliff_deaths, echo=F, include=T, cache=T}
+data.frame(Season = seasons,
+           total.low = unlist(lapply(X_Cliff$X.season.sums, FUN = quantile, 0.025)),
+           total.med = unlist(lapply(X_Cliff$X.season.sums, FUN = quantile, 0.50)),
+           total.high = unlist(lapply(X_Cliff$X.season.sums, FUN = quantile,0.975))) %>%
+  left_join(data.2, by = "Season") %>%
+  mutate(Pre2012 = ifelse(Season < 2012, 1, 0))-> total.deaths.cliff
+
+if (save.file)
+  write.csv(total.deaths.cliff, 
+            file = paste0("data/total_deaths_cliff_",
+                          model.names[[best.model.cliff.ID]], "_",
+                          Sys.Date(), ".csv"))
+
+p.cliff.total <- ggplot(data = total.deaths.cliff) + 
+  geom_errorbar(aes(x = PI, ymin = total.low, ymax = total.high)) +
+  geom_errorbarh(aes(y = total.med, xmin = PI - 2*SE, xmax = PI + 2*SE)) +
+  geom_point(aes(x = PI, y = total.med, color = as.factor(Pre2012)),
+             size = 2) +
+  scale_color_manual(labels = c("2012 - 2019", "pre 2012"),
+                     values = c("0" = "blue",
+                                "1" = "gold")) + 
+  theme(legend.title = element_blank()) + 
+  labs(x = "Total abundance", y = "Total cliff-fall deaths")
+  
+if (save.fig)
+  ggsave(p.cliff.total, filename = "figures/NvsDeaths_Cliff.png", 
+         dpi = 600, device = "png")
+```
+
+Then plot the relationship between the estimated abundance and estimated deaths including the uncertainty.
+
+
+```{r plot_NvsDeaths_cliff, echo=FALSE, cache=TRUE, fig.cap = "Figure x. The relationship between estimated total abundance of female green turtles and total cliff-fall deaths. Eror bars indicate the 95% CIs."}
+knitr::include_graphics( "figures/NvsDeaths_Cliff.png")
+```
+
+
+```{r prop_cliff_deaths, cache=T, include=T, echo=F}
+p.cliff.deaths <- vector(mode = "list", length = n.seasons)
+
+for (k in 1:n.seasons){
+  if (!is.na(total.deaths.cliff[k, "PI"])){
+    # create a distribution of abundance
+    N.season <- rnorm(n = length(X_Cliff$X.season.sums[[1]]), 
+                      mean = total.deaths.cliff[k, "PI"],
+                      sd = total.deaths.cliff[k, "SE"])
+    p.cliff.deaths[[k]] <- X_Cliff$X.season.sums[[k]]/N.season
+  }
+}
+
+p.cliff.deaths.summary <- data.frame(Season = seasons,
+                                     Low = unlist(lapply(p.cliff.deaths, FUN = quantile, 0.025)),
+                                     Med = unlist(lapply(p.cliff.deaths, FUN = quantile, 0.50)),
+                                     High = unlist(lapply(p.cliff.deaths, FUN = quantile, 0.975))) %>%
+  left_join(total.deaths.cliff, by = "Season")
+
+# force those that were < 0 or > 1 to be 0 and 1. 
+p.cliff.deaths.summary.mod <- p.cliff.deaths.summary
+p.cliff.deaths.summary.mod[which(p.cliff.deaths.summary$Low < 0), "Low"] <- 0
+p.cliff.deaths.summary.mod[which(p.cliff.deaths.summary$High > 1), "High"] <- 1
+
+p.prop.cliff <- ggplot() + 
+  geom_path(data = p.cliff.deaths.summary.mod,
+            aes(x = Season, y = Med)) +
+  geom_ribbon(data = p.cliff.deaths.summary.mod,
+              aes(x = Season, ymin = Low, ymax = High),
+              alpha = 0.4) + 
+  labs(x = "Season", y = "Proportion of cliff-fall deaths")
+
+if (save.fig)
+  ggsave(filename = "figures/prop_deaths_cliff.png", plot = p.prop.cliff,
+         device = "png", dpi = 600)
+```
+
+
+```{r plot_prop_cliff, echo=FALSE, cache=TRUE, fig.cap = "Figure x. Changes in proportion of cliff-fall deaths over time. Gray band indicates approximate 95% CIs."}
+knitr::include_graphics("figures/prop_deaths_cliff.png")
+```
+
+
+```{r cliff_death_table, echo=FALSE, include=TRUE}
+knitr::kable(p.cliff.deaths.summary.mod %>% select(Season, total.low, total.med, total.high, Low, Med, High), 
+             digits =  c(1,1,1,1,2,2,2),
+             col.names = c("Season", "N (2.5%)", "N (50%)", "N (97.5%)", "P (2.5%)", "P (50%)", "P (97.5%)"),
+             caption = "The estimated number of cliff-fall deaths of green turtles at Raine Island. N is the estimated number of deaths and P is the proportion of deaths relative to the total abundance")
+```
