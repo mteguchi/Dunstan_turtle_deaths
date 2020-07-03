@@ -142,8 +142,8 @@ Set MCMC parameters
 
 ```{r}
 MCMC.params <- list(n.chains = 4,
-                    n.samples = 50000,
-                    n.burnin = 10000,
+                    n.samples = 100000,
+                    n.burnin = 60000,
                     n.thin = 5)
 
 n.per.chain <- (MCMC.params$n.samples - MCMC.params$n.burnin)/MCMC.params$n.thin
@@ -155,7 +155,11 @@ model.names <- c("S_K_norm", "St_K_norm", "S_K1_K2_norm",
                  "S_K_Pois", "St_K_Pois", "S_K1_K2_Pois",
                  "St_K1_K2_Pois", "S1_S2_K_Pois", "S1_S2_K1_K2_Pois",
                  "S_K_P_Pois", "St_K_P_Pois", "S_K1_K2_P_Pois",
-                 "St_K1_K2_P_Pois", "S1_S2_K_P_Pois", "S1_S2_K1_K2_P_Pois")
+                 "St_K1_K2_P_Pois", "S1_S2_K_P_Pois", "S1_S2_K1_K2_P_Pois",
+                 "S_K_sigmaYt_norm", "St_K_sigmaYt_norm", "S_K1_K2_sigmaYt_norm",
+                 "St_K1_K2_sigmaYt_norm", "S1_S2_K_sigmaYt_norm", "S1_S2_K1_K2_sigmaYt_norm",
+                 "S_K_P_sigmaYt_norm", "St_K_P_sigmaYt_norm", "S_K1_K2_P_sigmaYt_norm",
+                 "St_K1_K2_P_sigmaYt_norm", "S1_S2_K_P_sigmaYt_norm", "S1_S2_K1_K2_P_sigmaYt_norm")
 
 jags.parameters <- list(c("sigma.y", "S", "K", "max",
                           "y", "X", "sigma.max", "deviance", "loglik"),
@@ -204,6 +208,30 @@ jags.parameters <- list(c("sigma.y", "S", "K", "max",
                         c( "S1", "S2", "K", "P", "max",
                           "y", "X", "sigma.max", "deviance", "loglik"),
                         c( "S1", "S2", "K1", "K2", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K1", "K2", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K1", "K2", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S1", "S2", "K", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S1", "S2", "K1", "K2", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K", "P","max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K1", "K2", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S", "K1", "K2", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S1", "S2", "K", "P", "max",
+                          "y", "X", "sigma.max", "deviance", "loglik"),
+                        c("sigma.y", "S1", "S2", "K1", "K2", "P", "max",
                           "y", "X", "sigma.max", "deviance", "loglik"))
 
 model.setting.list <- list(jags.parameters = jags.parameters,
@@ -285,24 +313,22 @@ for (k in 1:length(model.names)){
 }
 
 LOOIC.DIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
-                                   "M7", "M8", "M9", "M10", "M11", "M12",
-                                   "M13", "M14", "M15", "M16", "M17", "M18",
-                                   "M19", "M20", "M21", "M22", "M23", "M24"),
-                         LOOIC = unlist(lapply(loo.out.heat, 
-                                               FUN = function(x) x$estimates["looic",
-                                                                             "Estimate"])),
-                         SE = unlist(lapply(loo.out.heat, 
-                                            FUN = function(x) x$estimates["looic", "SE"])),
-                         DIC = DIC.heat,
-                         max.Rhat = max.Rhat.heat) %>%
+                                       "M7", "M8", "M9", "M10", "M11", "M12",
+                                       "M13", "M14", "M15", "M16", "M17", "M18",
+                                       "M19", "M20", "M21", "M22", "M23", "M24",
+                                       "M25", "M26", "M27", "M28", "M29", "M30",
+                                       "M31", "M32", "M33", "M34", "M35", "M36"),
+                             LOOIC = unlist(lapply(loo.out.heat, 
+                                                   FUN = function(x) x$estimates["looic",
+                                                                                 "Estimate"])),
+                             SE = unlist(lapply(loo.out.heat, 
+                                                FUN = function(x) x$estimates["looic", "SE"])),
+                             DIC = DIC.heat,
+                             max.Rhat = max.Rhat.heat) %>%
   arrange(by = LOOIC)
 
-# A quick look at DICs
-# DIC.Heat.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
-#                                     "M7", "M8", "M9", "M10", "M11", "M12"),
-#                           DIC = DIC.heat,
-#                           max.Rhat = max.Rhat.heat) %>%
-#  arrange(by = DIC)
+
+LOOIC.DIC.Heat
 ```
 
 Model 22 (St_K1_K2_P_Pois) seems to be the best according to LOOIC and DIC values. Convergence was reached for all parameters as well (max.Rhat < 1.1). Pareto k statistics look okay also...
@@ -330,7 +356,21 @@ Look at the density plot:
 ```{r}
 mcmc_dens(best.model.heat$samples, "P")
 
+
 ```
+
+
+```{r}
+mcmc_trace(best.model.heat$samples, c("K1", "K2"))
+
+```
+
+These don't look so bad but there were some high Rhat values... find which ones... 2020-07-02
+
+```{r}
+
+```
+
 
 I wonder if we need more MCMC steps... or it's possible that they are different over seasons...
 
@@ -354,23 +394,14 @@ ggplot() +
 
 ```
 
-Now we add all values of Xs for each year
-
-```{r}
-X_Heat_St_K1_K2_P$X.df %>% 
-  group_by(Season) %>%
-  summarise(total.low = sum(ceiling(Low), na.rm = T),
-            total.med = sum(ceiling(Med), na.rm = T),
-            total.high = sum(ceiling(High), na.rm = T)) -> total.deaths.heat
-```
 
 # Cliff fall
 Same can be done for cliff fall deaths:
 
 ```{r}
 MCMC.params <- list(n.chains = 4,
-                    n.samples = 100000,
-                    n.burnin = 60000,
+                    n.samples = 140000,
+                    n.burnin = 100000,
                     n.thin = 5)
 
 # first just run one at a time
@@ -442,37 +473,35 @@ for (k in 1:length(model.names)){
 }
 
 LOOIC.DIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
-                                    "M7", "M8", "M9", "M10", "M11", "M12",
-                                    "M13", "M14", "M15", "M16", "M17", "M18",
-                                   "M19", "M20", "M21", "M22", "M23", "M24"),
-                          LOOIC = unlist(lapply(loo.out.cliff, 
-                                                FUN = function(x) x$estimates["looic",
-                                                                              "Estimate"])),
-                          SE = unlist(lapply(loo.out.cliff, 
-                                             FUN = function(x) x$estimates["looic", "SE"])),
-                          DIC = DIC.cliff,
-                          Max.Rhat = max.Rhat.cliff) %>%
+                                        "M7", "M8", "M9", "M10", "M11", "M12",
+                                        "M13", "M14", "M15", "M16", "M17", "M18",
+                                        "M19", "M20", "M21", "M22", "M23", "M24",
+                                        "M25", "M26", "M27", "M28", "M29", "M30",
+                                        "M31", "M32", "M33", "M34", "M35", "M36"),
+                              LOOIC = unlist(lapply(loo.out.cliff, 
+                                                    FUN = function(x) x$estimates["looic",
+                                                                                  "Estimate"])),
+                              SE = unlist(lapply(loo.out.cliff, 
+                                                 FUN = function(x) x$estimates["looic", "SE"])),
+                              DIC = DIC.cliff,
+                              Max.Rhat = max.Rhat.cliff) %>%
   arrange(by = LOOIC)
 
-# A quick look at DICs
-# DIC.Cliff.df <- data.frame(Model = c("M1", "M2", "M3", "M4", "M5", "M6",
-#                                      "M7", "M8", "M9", "M10", "M11", "M12"),
-#                            DIC = DIC.cliff,
-#                            Max.Rhat = max.Rhat.cliff) %>%
-#   arrange(by = DIC)
+LOOIC.DIC.Cliff
+```
 
+Some have convergence issues, so find those with Max.Rhat < 1.1
+
+```{r}
+LOOIC.DIC.Cliff %>% filter(Max.Rhat < 1.1)
 
 ```
 
+Look at some of top ones from this list.  
 
-Model 22 (St_K1_K2_P_Pois) seems to be the best according to LOOIC and DIC values but the convergence is an issue. I can increase the MCMC sample size later. For now, I'll use the first one with convergence  (Model 16) for this time. Pareto k statistics look okay also...  
-
-Correction: I rerun M8 with longer chains and got them to converge (Rhat < 1.1) so using M8 for the following. 2020-06-19.
-
-Another Correction: I rerun all models with longer chains and both M10 and M8 converged (Rhat < 1.1). Results showed that M10 was better than M8. So, going back to M10. I also changed the prior for the P parameter, which is the peak DOS. The previous prior (UNIF(1,100)) showed that the posterior was pushed against the upper bound. By changing the prior to (UNIF(10, 150)), the posterior looks a lot better. 2020-06-21.
-
+Pareto_k values show that M18 is a better model than M14 (fewer bad and very bad data points.) So, I'll go with M18 for now.  2020-07-02.
 ```{r}
-best.model.cliff.ID <- 16
+best.model.cliff.ID <- 14
 best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
                                         model.names[[best.model.cliff.ID]],
                                         "_LOOIC.rds"))
@@ -480,23 +509,80 @@ best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_",
 pareto_k_table(best.model.cliff.looic)
     
 ```
-Although some are very bad, the majority are okay. So, I'll go with it. 
 
-We'll use Model 10 for computing the total deaths due to the heat related reasons.
+
+```{r}
+best.model.cliff.ID <- 18
+best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
+                                        model.names[[best.model.cliff.ID]],
+                                        "_LOOIC.rds"))
+
+pareto_k_table(best.model.cliff.looic)
+    
+```
+
+Although some are very bad, the majority are okay. Take a look at some trace plots:
 
 ```{r}
 best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
                                    model.names[[best.model.cliff.ID]],
                                    ".rds"))
 
-X_Cliff <- compute.summary.stats_St_K1_K2_P(best.model.cliff$samples, 
-                                            seasons, 
-                                            max.days$total.days)
+mcmc_trace(best.model.cliff$samples, c("K1", "K2"))
+```
+
+These are not quite acceptable... 
+
+```{r}
+mcmc_trace(best.model.cliff$samples, c("S1", "S2"))
+```
+
+These look horrible as well... 
+
+How about M10?
+
+```{r}
+best.model.cliff.ID <- 10
+best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
+                                        model.names[[best.model.cliff.ID]],
+                                        "_LOOIC.rds"))
+
+pareto_k_table(best.model.cliff.looic)
+    
+```
+
+```{r}
+best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
+                                   model.names[[best.model.cliff.ID]],
+                                   ".rds"))
+
+model.names[[best.model.cliff.ID]]
+```
+
+```{r}
+mcmc_trace(best.model.cliff$samples, c("K1", "K2"))
+```
+
+Not great but better than the others.
+
+```{r}
+mcmc_trace(best.model.cliff$samples, "P")
+```
+
+This is a lot better. 
+
+So, I'll use Model 10 for computing the total deaths due to the heat related reasons.
+
+```{r}
+
+X_Cliff <- compute.summary.stats_St_K1_K2_P(samples = best.model.cliff$samples, 
+                                             seasons = seasons, 
+                                             total.days = max.days$total.days)
 
 ggplot() + 
-  geom_path(data = X_Cliff,
+  geom_path(data = X_Cliff$X.df,
             aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Cliff,
+  geom_ribbon(data = X_Cliff$X.df,
               aes(x = DOS, ymin = Low, ymax = High),
               alpha = 0.4) + 
   geom_point(data = data.1,
@@ -507,22 +593,6 @@ ggplot() +
 ```
 
 
-Now we add all values of Xs for each year
-
-```{r}
-X_Cliff %>% 
-  group_by(Season) %>%
-  summarise(total.low = sum(ceiling(Low), na.rm = T),
-            total.med = sum(ceiling(Med), na.rm = T),
-            total.high = sum(ceiling(High), na.rm = T)) -> total.deaths.cliff
-
-#total.deaths.cliff
-```
-
-
-```{r}
-mcmc_trace(best.model.cliff$samples, "P")
-```
 
 Start here next... 2020-06-16
 
@@ -535,6 +605,11 @@ Things to do:
 Start here 2020-06-17
 
 The bulk of the analysis is done. So, convert this to a report. I decided not to use mvnormal because of the two variables (heat-related and cliff-fall deaths) are seemingly uncorrelated. 
+
+2020-07-02
+Added Poisson models to both heat and cliff datasets. 
+
+Move to Report_Total_Deaths_Estimation.Rmd and its modifications (v2, v3) from here. 
 
 
 

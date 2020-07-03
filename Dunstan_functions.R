@@ -316,7 +316,7 @@ compute.summary.stats_S_K1_K2 <- function(samples, seasons, max.days, P){
   return(X_S_K1_K2.df)
 }
 
-compute.summary.stats_S1_S2_K1_K2 <- function(samples, seasons, max.days, P){
+compute.summary.stats_S1_S2_K1_K2 <- function(samples, seasons, total.days, P){
   
   K1 <- extract.samples("K1", samples)   # just one of these
   K2 <- extract.samples("K2", samples)   # just one of these
@@ -325,21 +325,30 @@ compute.summary.stats_S1_S2_K1_K2 <- function(samples, seasons, max.days, P){
   
   X.low <- X.high <- X.med <- matrix(data = NA, 
                                      nrow = n.seasons, 
-                                     ncol = max(max.days))
-  i <- j <- 1
+                                     ncol = max(total.days))
+  X.list <- vector(mode = "list", length = max(total.days) * n.seasons)
+  X.season <- vector(mode = "list", length = n.seasons)
+  
+  c <- i <- j <- 1
   for (i in 1:n.seasons){   # year
     max_i <- extract.samples(paste0("max[", i, "]"), samples)
-    for (j in 1:max.days[i]){   # days
+    c.start <- c
+    
+    for (j in 1:total.days[i]){   # days
       # state
       M1 <- (1 + (2 * exp(K1) - 1) * exp((1/(S1)) * (P[i] - j))) ^ (-1/exp(K1))
       M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S2) * (P[i] - j))) ^ (-1/exp(K2))
-      X <-  max_i * (M1 * M2)
+      #X <-  max_i * (M1 * M2)
+      X.list[[c]] <-  max_i * (M1 * M2)
       
-      X.low[i,j] <- quantile(X, 0.025)
-      X.med[i,j] <- quantile(X, 0.50)      
-      X.high[i,j] <- quantile(X, 0.975)
-      
+      X.low[i,j] <- quantile(X.list[[c]], 0.025)
+      X.med[i,j] <- quantile(X.list[[c]], 0.50)      
+      X.high[i,j] <- quantile(X.list[[c]], 0.975)
+      c <- c + 1
     }
+    c.end <- c - 1
+    X.season[[i]] <- list2DF(X.list[c.start:c.end])
+    
   }  
   
   X.low.df <- data.frame(t(X.low)) %>% melt() %>% 
@@ -349,6 +358,8 @@ compute.summary.stats_S1_S2_K1_K2 <- function(samples, seasons, max.days, P){
   X.high.df <- data.frame(t(X.high)) %>% melt() %>%
     transmute(High = value) 
   
+  X.season.sum <- lapply(X.season, rowSums)
+  
   X_S1_S2_K1_K2.df <- data.frame(DOS = rep(seq(1, ncol(X.low)), 
                                            length.out = n.seasons * ncol(X.low)),
                                  Season = rep(seasons,
@@ -357,7 +368,13 @@ compute.summary.stats_S1_S2_K1_K2 <- function(samples, seasons, max.days, P){
                                  Med = X.med.df$Med,
                                  High = X.high.df$High)
   
-  return(X_S1_S2_K1_K2.df)
+  X.out <- list(X.raw = X.list,
+                X.season = X.season,
+                X.season.sums = X.season.sum,
+                X.df = X_S1_S2_K1_K2.df)
+  
+  return(X.out)
+  
 }
 
 compute.looic <- function(loglik, data.vector, MCMC.params){

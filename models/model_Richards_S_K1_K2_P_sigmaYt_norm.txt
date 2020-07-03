@@ -15,22 +15,14 @@
 # S > 0 and S1 = -S define the "fatness" of the function
 # K > 0 defines the "flatness" at the peak of the function
 # P defines where the peak is relatvie to the range of d min(d) < P < max(d).
-# For this analysis, I set P to the middle of the season, that is 
-# P = floor((max(d) - min(d))/2) because there is not enough data to 
-# estimate this parameter.
-# P needs to be provided through data.
 # min = 0.
 #
-# In this modified version, there are two K values (K1 and K2) and two 
-# S parameters (S1 and S2). The M1 and M2 above are modified as follows:
+# In this modified version, there are two K values: K1 and K2. The M1 and
+# M2 above are modified as follows:
 #
-# S1 < 0
-# S2 > 0
 # M1 <- (1 + (2 * exp(K1) - 1) * exp((1/S1) * (P - d))) ^ (-1/exp(K1))
-# M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S2) * (P - d))) ^ (-1/exp(K2))
+# M2 <- (1 + (2 * exp(K2) - 1) * exp((1/S) * (P - d))) ^ (-1/exp(K2))
 #
-
-
 # Observed counts are assumed to be normally distributed around this function.
 
 model{
@@ -38,13 +30,13 @@ model{
   for (i in 1:n.seasons){   # year
     for (j in 1:n.vec[i]){   # days
       # state
-      M1[i, j] <- (1 + (2 * exp(K1) - 1) * exp((1/S1) * (P[i] - t[i,j]))) ^ (-1/exp(K1))
-      M2[i, j] <- (1 + (2 * exp(K2) - 1) * exp((1/S2) * (P[i] - t[i,j]))) ^ (-1/exp(K2))
+      M1[i, j] <- (1 + (2 * exp(K1) - 1) * exp((1/(-S)) * (P - t[i,j]))) ^ (-1/exp(K1))
+      M2[i, j] <- (1 + (2 * exp(K2) - 1) * exp((1/S) * (P - t[i,j]))) ^ (-1/exp(K2))
       X[i, j] <-  max[i] * (M1[i, j] * M2[i, j])
             
       # observation
-      y[i, j] ~ dnorm(X[i, j], tau.y)
-      loglik[i,j] <- logdensity.norm(y[i,j], X[i,j], tau.y)          
+      y[i, j] ~ dnorm(X[i, j], tau.y[i])
+      loglik[i,j] <- logdensity.norm(y[i,j], X[i,j], tau.y[i])                          
       
     }
   }  
@@ -53,19 +45,20 @@ model{
   for (yr in 1:n.seasons){
     max[yr] ~ dnorm(max.vec[yr], tau.max)T(0,)
     
-    #P[yr] ~ dunif(0, 100)
+    tau.y[yr] ~ dunif(0, 1) #dgamma(tau.y.alpha, tau.y.beta)
+    sigma.y[yr] <- 1/sqrt(tau.y[yr])
 
   }
 
-  K1 ~ dnorm(0, 0.01)T(0,)
-  K2 ~ dnorm(0, 0.01)T(0,)
-  S1 ~ dnorm(0, 0.1)T(,0)
-  S2 ~ dnorm(0, 0.1)T(0,)
+  K1 ~ dnorm(0, 0.1)T(0,)
+  K2 ~ dnorm(0, 0.1)T(0,)
+  S ~ dnorm(0, 0.1)T(0,)
+  P ~ dunif(10, 150)
+  #tau.y.alpha ~ dnorm(0, 1)T(0,)
+  #tau.y.beta ~ dnorm(0, 1)T(0,)
 
   tau.max ~ dgamma(5, 0.1)
   sigma.max <- 1/sqrt(tau.max)
 
-  tau.y ~ dgamma(1, 0.1)
-  sigma.y <- 1/sqrt(tau.y)
 
 }

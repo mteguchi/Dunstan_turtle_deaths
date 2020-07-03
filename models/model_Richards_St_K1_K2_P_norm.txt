@@ -51,8 +51,8 @@ model{
   #      Xa[i, j] <-  max[i] * (M1a[i, j] * M2a[i, j])        
   #   }
      
-     sumXa[i] <- round(sum(Xa[i,1:max.days[i]]))
-  }
+  #   sumXa[i] <- round(sum(Xa[i,1:max.days[i]]))
+  #}
      
   # priors
   for (yr in 1:n.seasons){

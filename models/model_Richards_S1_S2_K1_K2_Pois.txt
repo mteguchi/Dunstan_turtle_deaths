@@ -62,7 +62,7 @@ model{
   S1 ~ dnorm(0, 0.1)T(,0)
   S2 ~ dnorm(0, 0.1)T(0,)
 
-  sigma.max ~ dgamma(5, 0.1)
-  tau.max <- 1/(sigma.max * sigma.max)
+  tau.max ~ dgamma(5, 0.1)
+  sigma.max <- 1/sqrt(tau.max)
 
 }
