@@ -141,12 +141,6 @@ Because no obvious correlation between heat-related and cliff fall deaths, I fit
 Set MCMC parameters
 
 ```{r}
-MCMC.params <- list(n.chains = 4,
-                    n.samples = 100000,
-                    n.burnin = 60000,
-                    n.thin = 5)
-
-n.per.chain <- (MCMC.params$n.samples - MCMC.params$n.burnin)/MCMC.params$n.thin
 
 model.names <- c("S_K_norm", "S_K_Pois", "S_K_sigmaYt_norm", 
                  "S_K1_K2_norm", "S_K1_K2_Pois", "S_K1_K2_sigmaYt_norm",
@@ -175,18 +169,11 @@ jags.params.S1.S2.K <- c("sigma.y", "S1", "S2", "K", "max","P",
 jags.params.S1.S2.K1.K2 <- c("sigma.y", "S1", "S2", "K1", "K2", "max","P",
                              "y", "X", "sigma.max", "deviance", "loglik")
 
-# model.setting.list <- list(jags.parameters = jags.parameters,
-#                            MCMC.params = MCMC.params,
-#                            model.names = model.names)
+jags.params.list <- list(S_K = jags.params.S.K,
+                        S_K1_K2 = jags.params.S.K1.K2,
+                        S1_S2_K = jags.params.S1.S2.K,
+                        S1_S2_K1_K2 = jags.params.S1.S2.K1.K2)
 
-#saveRDS(model.setting.list, file = paste0("RData/model_setting_", Sys.Date(), ".rds"))
-
-```
-
-
-# Heat related deaths
-
-```{r}
 
 jags.data.Heat <- list(y = (obs.y.1[,,1]),
                        t = obs.t,
@@ -200,6 +187,41 @@ jags.data.Heat_P <- list(y = (obs.y.1[,,1]),
                          n.vec = n.vec,
                          n.seasons = n.seasons,
                          max.vec = max.mat[,1])
+
+jags.data.Cliff <- list(y = (obs.y.1[,,2]),
+                       t = obs.t,
+                       P = P,
+                       n.vec = n.vec,
+                       n.seasons = n.seasons,
+                       max.vec = max.mat[,1])
+
+jags.data.Cliff_P <- list(y = (obs.y.1[,,2]),
+                          t = obs.t,
+                          n.vec = n.vec,
+                          n.seasons = n.seasons,
+                          max.vec = max.mat[,1])
+
+model.setting.list <- list(jags.parameters = jags.params.list,
+                           jags.data.heat = jags.data.Heat,
+                           jags.data.heat.P = jags.data.Heat_P,
+                           jags.data.cliff = jags.data.Cliff,
+                           jags.data.cliff.P = jags.data.Cliff_P,
+                           model.names = model.names)
+
+saveRDS(model.setting.list, file = paste0("RData/model_setting_", Sys.Date(), ".rds"))
+
+```
+
+
+# Heat related deaths
+
+```{r}
+MCMC.params <- list(n.chains = 4,
+                    n.samples = 100000,
+                    n.burnin = 60000,
+                    n.thin = 5)
+
+n.per.chain <- (MCMC.params$n.samples - MCMC.params$n.burnin)/MCMC.params$n.thin
 
 # Convert the data into a vector also and match with the log-likelihood vector
 # for computing looic.
@@ -270,6 +292,7 @@ LOOIC.DIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
                                        "M19", "M20", "M21", "M22", "M23", "M24",
                                        "M25", "M26", "M27", "M28", "M29", "M30",
                                        "M31", "M32", "M33", "M34", "M35", "M36"),
+                             model.names = model.names,
                              LOOIC = unlist(lapply(loo.out.heat, 
                                                    FUN = function(x) x$estimates["looic",
                                                                                  "Estimate"])),
@@ -279,6 +302,7 @@ LOOIC.DIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
                              max.Rhat = max.Rhat.heat) %>%
   arrange(by = LOOIC)
 
+saveRDS(LOOIC.DIC.Heat, file = paste0("RData/LOOIC_DIC_Heat_", Sys.Date(), ".rds"))
 
 LOOIC.DIC.Heat
 ```
@@ -354,13 +378,13 @@ I wonder if we need more MCMC steps...
 ```{r}
 
 X_Heat_S_K_P <- compute.summary.stats_S_K_P(best.model.heat$samples, 
-                                                      seasons, 
-                                                      max.days$total.days)
+                                            seasons, 
+                                            max.days$total.days)
 
 ggplot() + 
-  geom_path(data = X_Heat_St_K1_K2_P$X.df,
+  geom_path(data = X_Heat_S_K_P$X.df,
             aes(x = DOS, y = Med)) +
-  geom_ribbon(data = X_Heat_St_K1_K2_P$X.df,
+  geom_ribbon(data = X_Heat_S_K_P$X.df,
               aes(x = DOS, ymin = Low, ymax = High),
               alpha = 0.4) + 
   geom_point(data = data.1,
@@ -369,7 +393,6 @@ ggplot() +
 
 
 ```
-
 
 # Cliff fall
 Same can be done for cliff fall deaths:
@@ -381,18 +404,6 @@ MCMC.params <- list(n.chains = 4,
                     n.thin = 5)
 
 # first just run one at a time
-jags.data.Cliff <- list(y = (obs.y.1[,,2]),
-                       t = obs.t,
-                       P = P,
-                       n.vec = n.vec,
-                       n.seasons = n.seasons,
-                       max.vec = max.mat[,1])
-
-jags.data.Cliff_P <- list(y = (obs.y.1[,,2]),
-                          t = obs.t,
-                          n.vec = n.vec,
-                          n.seasons = n.seasons,
-                          max.vec = max.mat[,1])
 
 # Convert the data into a vector also and match with the log-likelihood vector
 # for computing looic.
@@ -412,9 +423,20 @@ for (k in 1:length(model.names)){
       jags.data <- jags.data.Cliff
     }
     
+    if (length(grep("S_K_", model.names[[k]])) == 1 | length(grep("St_K_", model.names[[k]])) == 1){
+      jags.parameters <- jags.params.S.K
+    } else if (length(grep("S_K1_K2_", model.names[[k]])) == 1 | length(grep("St_K1_K2_", model.names[[k]])) == 1){
+      jags.parameters <- jags.params.S.K1.K2
+    } else if (length(grep("S1_S2_K_", model.names[[k]])) == 1){
+      jags.parameters <- jags.params.S1.S2.K
+    } else if (length(grep("S1_S2_K1_K2_", model.names[[k]])) == 1){
+      jags.parameters <- jags.params.S1.S2.K1.K2
+    }
+    
+    
     M1.Cliff <- jags(jags.data,
                      inits = NULL,
-                     parameters.to.save= jags.parameters[[k]],
+                     parameters.to.save= jags.parameters,
                      model.file = paste0("models/model_Richards_", 
                                          model.names[[k]], ".txt"),
                      n.chains = MCMC.params$n.chains,
@@ -454,15 +476,17 @@ LOOIC.DIC.Cliff <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
                                         "M19", "M20", "M21", "M22", "M23", "M24",
                                         "M25", "M26", "M27", "M28", "M29", "M30",
                                         "M31", "M32", "M33", "M34", "M35", "M36"),
+                              model.names = model.names,
                               LOOIC = unlist(lapply(loo.out.cliff, 
                                                     FUN = function(x) x$estimates["looic",
                                                                                   "Estimate"])),
                               SE = unlist(lapply(loo.out.cliff, 
                                                  FUN = function(x) x$estimates["looic", "SE"])),
                               DIC = DIC.cliff,
-                              Max.Rhat = max.Rhat.cliff) %>%
+                              max.Rhat = max.Rhat.cliff) %>%
   arrange(by = LOOIC)
 
+saveRDS(LOOIC.DIC.Cliff, file = paste0("RData/LOOIC_DIC_Cliff_", Sys.Date(), ".rds"))
 LOOIC.DIC.Cliff
 ```
 
@@ -473,11 +497,11 @@ LOOIC.DIC.Cliff %>% filter(Max.Rhat < 1.1)
 
 ```
 
-Look at some of top ones from this list.  
+Look at some of top ones from this list. M9, M27, and M12.  
 
 Pareto_k values show that M18 is a better model than M26 (fewer bad and very bad data points.) So, I'll go with M26 for now.  2020-07-03.
 ```{r}
-best.model.cliff.ID <- 26
+best.model.cliff.ID <- 9
 best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
                                         model.names[[best.model.cliff.ID]],
                                         "_LOOIC.rds"))
@@ -491,19 +515,41 @@ model.names[[best.model.cliff.ID]]
 ```
 
 
-<!-- ```{r} -->
-<!-- best.model.cliff.ID <-  -->
-<!-- best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_",  -->
-<!--                                         model.names[[best.model.cliff.ID]], -->
-<!--                                         "_LOOIC.rds")) -->
+```{r}
+best.model.cliff.ID <- 27
+best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_",
+                                        model.names[[best.model.cliff.ID]],
+                                        "_LOOIC.rds"))
 
-<!-- pareto_k_table(best.model.cliff.looic) -->
+pareto_k_table(best.model.cliff.looic)
 
-<!-- ``` -->
+```
+
+```{r}
+model.names[[best.model.cliff.ID]]
+```
+
+
+```{r}
+best.model.cliff.ID <- 12
+best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_",
+                                        model.names[[best.model.cliff.ID]],
+                                        "_LOOIC.rds"))
+
+pareto_k_table(best.model.cliff.looic)
+
+```
+
+```{r}
+model.names[[best.model.cliff.ID]]
+```
+
+They see all about the same with respect to LOOIC. All included sigmaY[t].
 
 Although a couple are very bad, the majority are okay. Take a look at some trace plots:
 
 ```{r}
+best.model.cliff.ID <- 9
 best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
                                    model.names[[best.model.cliff.ID]],
                                    ".rds"))
@@ -516,8 +562,6 @@ mcmc_trace(best.model.cliff$samples, c("sigma.y[5]", "sigma.y[6]", "sigma.y[7]",
 
 ```
 
-
-
 ```{r}
 mcmc_trace(best.model.cliff$samples, c("sigma.y[9]", "sigma.y[10]", "sigma.y[11]", "sigma.y[12]"))
 
@@ -529,8 +573,27 @@ These look okay.
 mcmc_trace(best.model.cliff$samples, c("K"))
 ```
 
-This looks ok... 
+This looks ok... not great but okay. 
 
+```{r}
+
+mcmc_trace(best.model.cliff$samples, c("S[1]", "S[2]", "S[3]", "S[4]"))
+```
+
+
+```{r}
+
+mcmc_trace(best.model.cliff$samples, c("S[5]", "S[6]", "S[7]", "S[8]"))
+```
+
+
+
+```{r}
+
+mcmc_trace(best.model.cliff$samples, c("S[9]", "S[10]", "S[11]", "S[12]"))
+```
+
+These look okay also. 
 
 <!-- ```{r} -->
 <!-- best.model.cliff.ID <- 10 -->
@@ -562,7 +625,7 @@ Not great but better than the others.
 
 This is a lot better. 
 
-So, I'll use Model 26 for computing the total deaths due to the heat related reasons.
+So, I'll use Model 9 for computing the total deaths due to the heat related reasons.
 
 ```{r}
 
