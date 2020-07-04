@@ -148,95 +148,36 @@ MCMC.params <- list(n.chains = 4,
 
 n.per.chain <- (MCMC.params$n.samples - MCMC.params$n.burnin)/MCMC.params$n.thin
 
-model.names <- c("S_K_norm", "St_K_norm", "S_K1_K2_norm",
-                 "St_K1_K2_norm", "S1_S2_K_norm", "S1_S2_K1_K2_norm",
-                 "S_K_P_norm", "St_K_P_norm", "S_K1_K2_P_norm",
-                 "St_K1_K2_P_norm", "S1_S2_K_P_norm", "S1_S2_K1_K2_P_norm",
-                 "S_K_Pois", "St_K_Pois", "S_K1_K2_Pois",
-                 "St_K1_K2_Pois", "S1_S2_K_Pois", "S1_S2_K1_K2_Pois",
-                 "S_K_P_Pois", "St_K_P_Pois", "S_K1_K2_P_Pois",
-                 "St_K1_K2_P_Pois", "S1_S2_K_P_Pois", "S1_S2_K1_K2_P_Pois",
-                 "S_K_sigmaYt_norm", "St_K_sigmaYt_norm", "S_K1_K2_sigmaYt_norm",
-                 "St_K1_K2_sigmaYt_norm", "S1_S2_K_sigmaYt_norm", "S1_S2_K1_K2_sigmaYt_norm",
-                 "S_K_P_sigmaYt_norm", "St_K_P_sigmaYt_norm", "S_K1_K2_P_sigmaYt_norm",
-                 "St_K1_K2_P_sigmaYt_norm", "S1_S2_K_P_sigmaYt_norm", "S1_S2_K1_K2_P_sigmaYt_norm")
+model.names <- c("S_K_norm", "S_K_Pois", "S_K_sigmaYt_norm", 
+                 "S_K1_K2_norm", "S_K1_K2_Pois", "S_K1_K2_sigmaYt_norm",
+                 
+                 "St_K_norm", "St_K_Pois", "St_K_sigmaYt_norm", 
+                 "St_K1_K2_norm", "St_K1_K2_Pois", "St_K1_K2_sigmaYt_norm", 
+                 
+                 "S1_S2_K_norm", "S1_S2_K_Pois", "S1_S2_K_sigmaYt_norm",
+                 "S1_S2_K1_K2_norm", "S1_S2_K1_K2_Pois", "S1_S2_K1_K2_sigmaYt_norm",
+                 
+                 "S_K_P_norm", "S_K_P_Pois", "S_K_P_sigmaYt_norm",
+                 "S_K1_K2_P_norm", "S_K1_K2_P_Pois", "S_K1_K2_P_sigmaYt_norm",
+                 
+                 "St_K_P_norm", "St_K_P_Pois", "St_K_P_sigmaYt_norm",
+                 "St_K1_K2_P_norm", "St_K1_K2_P_Pois", "St_K1_K2_P_sigmaYt_norm",
+                 
+                 "S1_S2_K_P_norm", "S1_S2_K_P_Pois", "S1_S2_K_P_sigmaYt_norm",
+                 "S1_S2_K1_K2_P_norm", "S1_S2_K1_K2_P_Pois", "S1_S2_K1_K2_P_sigmaYt_norm")
 
-jags.parameters <- list(c("sigma.y", "S", "K", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K1", "K2", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K1", "K2", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S1", "S2", "K", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S1", "S2", "K1", "K2", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K", "P","max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K1", "K2", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K1", "K2", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S1", "S2", "K", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S1", "S2", "K1", "K2", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("S", "K", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S", "K", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S", "K1", "K2", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S", "K1", "K2", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("S1", "S2", "K", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S1", "S2", "K1", "K2", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S", "K", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S", "K", "P","max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S", "K1", "K2", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S", "K1", "K2", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S1", "S2", "K", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c( "S1", "S2", "K1", "K2", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K1", "K2", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K1", "K2", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S1", "S2", "K", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S1", "S2", "K1", "K2", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K", "P","max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K1", "K2", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S", "K1", "K2", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S1", "S2", "K", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"),
-                        c("sigma.y", "S1", "S2", "K1", "K2", "P", "max",
-                          "y", "X", "sigma.max", "deviance", "loglik"))
+jags.params.S.K <- c("sigma.y", "S", "K", "max", "P",
+                     "y", "X", "sigma.max", "deviance", "loglik")
+jags.params.S.K1.K2 <- c("sigma.y", "S", "K1", "K2", "max","P",
+                          "y", "X", "sigma.max", "deviance", "loglik")
+jags.params.S1.S2.K <- c("sigma.y", "S1", "S2", "K", "max","P",
+                         "y", "X", "sigma.max", "deviance", "loglik")
+jags.params.S1.S2.K1.K2 <- c("sigma.y", "S1", "S2", "K1", "K2", "max","P",
+                             "y", "X", "sigma.max", "deviance", "loglik")
 
-model.setting.list <- list(jags.parameters = jags.parameters,
-                           MCMC.params = MCMC.params,
-                           model.names = model.names)
+# model.setting.list <- list(jags.parameters = jags.parameters,
+#                            MCMC.params = MCMC.params,
+#                            model.names = model.names)
 
 #saveRDS(model.setting.list, file = paste0("RData/model_setting_", Sys.Date(), ".rds"))
 
@@ -279,9 +220,20 @@ for (k in 1:length(model.names)){
       jags.data <- jags.data.Heat
     }
     
+    if (length(grep("S_K_", model.names[[k]])) == 1 | length(grep("St_K_", model.names[[k]])) == 1){
+      jags.parameters <- jags.params.S.K
+    } else if (length(grep("S_K1_K2_", model.names[[k]])) == 1 | length(grep("St_K1_K2_", model.names[[k]])) == 1){
+      jags.parameters <- jags.params.S.K1.K2
+    } else if (length(grep("S1_S2_K_", model.names[[k]])) == 1){
+      jags.parameters <- jags.params.S1.S2.K
+    } else if (length(grep("S1_S2_K1_K2_", model.names[[k]])) == 1){
+      jags.parameters <- jags.params.S1.S2.K1.K2
+    }
+    
+    
     M1.Heat <- jags(jags.data,
                     inits = NULL,
-                    parameters.to.save= jags.parameters[[k]],
+                    parameters.to.save= jags.parameters,
                     model.file = paste0("models/model_Richards_", model.names[[k]], ".txt"),
                     n.chains = MCMC.params$n.chains,
                     n.burnin = MCMC.params$n.burnin,
@@ -331,53 +283,77 @@ LOOIC.DIC.Heat <- data.frame(model = c("M1", "M2", "M3", "M4", "M5", "M6",
 LOOIC.DIC.Heat
 ```
 
-Model 22 (St_K1_K2_P_Pois) seems to be the best according to LOOIC and DIC values. Convergence was reached for all parameters as well (max.Rhat < 1.1). Pareto k statistics look okay also...
+Model 29 (St_K1_K2_P_Pois) seems to be the best according to LOOIC and DIC values. Convergence was reached for all parameters as well (max.Rhat < 1.1). Pareto k statistics look okay also...
 
 ```{r}
+LOOIC.DIC.Heat %>% filter(max.Rhat < 1.1)
+
+```
+
+M20 seems to be good... check Pareto-K
+
+```{r}
+best.model.heat.ID <- 20
 
 best.model.heat.looic <- readRDS(paste0("RData/Richards_Heat_", 
-                                        model.names[[22]], "_LOOIC.rds"))
+                                        model.names[[best.model.heat.ID]], "_LOOIC.rds"))
 
 pareto_k_table(best.model.heat.looic)
     
 ```
-There are some bad data points... but we'll use this model for computing the total deaths due to the heat related reasons.
 
-First, take a look at the convergence of the P parameter.
+These are good. A bad data point... but we'll use this model for computing the total deaths due to the heat related reasons.
 
 ```{r}
-best.model.heat <- readRDS(paste0("RData/Richards_Heat_", model.names[[22]], ".rds"))
-
-mcmc_trace(best.model.heat$samples, "P")
+model.names[[best.model.heat.ID]]
 ```
+
+<!-- ```{r} -->
+<!-- best.model.heat.ID <- 23 -->
+
+<!-- best.model.heat.looic <- readRDS(paste0("RData/Richards_Heat_",  -->
+<!--                                         model.names[[best.model.heat.ID]], "_LOOIC.rds")) -->
+
+<!-- pareto_k_table(best.model.heat.looic) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r} -->
+<!-- model.names[[best.model.heat.ID]] -->
+<!-- ``` -->
+
+First, take a look at the convergence of S1, S2, P and K parameters.
+
+```{r}
+best.model.heat <- readRDS(paste0("RData/Richards_Heat_", 
+                                  model.names[[best.model.heat.ID]], ".rds"))
+
+mcmc_trace(best.model.heat$samples, c("S", "P", "K"))
+```
+
+S is not great... 
 
 Look at the density plot:
 
 ```{r}
-mcmc_dens(best.model.heat$samples, "P")
+mcmc_dens(best.model.heat$samples, c("S", "P", "K"))
 
 
 ```
 
 
-```{r}
-mcmc_trace(best.model.heat$samples, c("K1", "K2"))
+<!-- ```{r} -->
+<!-- mcmc_trace(best.model.heat$samples, c("K1", "K2")) -->
 
-```
+<!-- ``` -->
 
-These don't look so bad but there were some high Rhat values... find which ones... 2020-07-02
-
-```{r}
-
-```
-
-
-I wonder if we need more MCMC steps... or it's possible that they are different over seasons...
+I wonder if we need more MCMC steps... 
 
 
 ```{r}
 
-X_Heat_St_K1_K2_P <- compute.summary.stats_St_K1_K2_P(best.model.heat$samples, 
+X_Heat_S_K_P <- compute.summary.stats_S_K_P(best.model.heat$samples, 
                                                       seasons, 
                                                       max.days$total.days)
 
@@ -499,50 +475,9 @@ LOOIC.DIC.Cliff %>% filter(Max.Rhat < 1.1)
 
 Look at some of top ones from this list.  
 
-Pareto_k values show that M18 is a better model than M14 (fewer bad and very bad data points.) So, I'll go with M18 for now.  2020-07-02.
+Pareto_k values show that M18 is a better model than M26 (fewer bad and very bad data points.) So, I'll go with M26 for now.  2020-07-03.
 ```{r}
-best.model.cliff.ID <- 14
-best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
-                                        model.names[[best.model.cliff.ID]],
-                                        "_LOOIC.rds"))
-
-pareto_k_table(best.model.cliff.looic)
-    
-```
-
-
-```{r}
-best.model.cliff.ID <- 18
-best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
-                                        model.names[[best.model.cliff.ID]],
-                                        "_LOOIC.rds"))
-
-pareto_k_table(best.model.cliff.looic)
-    
-```
-
-Although some are very bad, the majority are okay. Take a look at some trace plots:
-
-```{r}
-best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
-                                   model.names[[best.model.cliff.ID]],
-                                   ".rds"))
-
-mcmc_trace(best.model.cliff$samples, c("K1", "K2"))
-```
-
-These are not quite acceptable... 
-
-```{r}
-mcmc_trace(best.model.cliff$samples, c("S1", "S2"))
-```
-
-These look horrible as well... 
-
-How about M10?
-
-```{r}
-best.model.cliff.ID <- 10
+best.model.cliff.ID <- 26
 best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_", 
                                         model.names[[best.model.cliff.ID]],
                                         "_LOOIC.rds"))
@@ -552,32 +487,89 @@ pareto_k_table(best.model.cliff.looic)
 ```
 
 ```{r}
-best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
-                                   model.names[[best.model.cliff.ID]],
-                                   ".rds"))
-
 model.names[[best.model.cliff.ID]]
 ```
 
+
+<!-- ```{r} -->
+<!-- best.model.cliff.ID <-  -->
+<!-- best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_",  -->
+<!--                                         model.names[[best.model.cliff.ID]], -->
+<!--                                         "_LOOIC.rds")) -->
+
+<!-- pareto_k_table(best.model.cliff.looic) -->
+
+<!-- ``` -->
+
+Although a couple are very bad, the majority are okay. Take a look at some trace plots:
+
 ```{r}
-mcmc_trace(best.model.cliff$samples, c("K1", "K2"))
+best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_", 
+                                   model.names[[best.model.cliff.ID]],
+                                   ".rds"))
+
+mcmc_trace(best.model.cliff$samples, c("sigma.y[1]", "sigma.y[2]", "sigma.y[3]", "sigma.y[4]"))
 ```
+
+```{r}
+mcmc_trace(best.model.cliff$samples, c("sigma.y[5]", "sigma.y[6]", "sigma.y[7]", "sigma.y[8]"))
+
+```
+
+
+
+```{r}
+mcmc_trace(best.model.cliff$samples, c("sigma.y[9]", "sigma.y[10]", "sigma.y[11]", "sigma.y[12]"))
+
+```
+
+These look okay.
+
+```{r}
+mcmc_trace(best.model.cliff$samples, c("K"))
+```
+
+This looks ok... 
+
+
+<!-- ```{r} -->
+<!-- best.model.cliff.ID <- 10 -->
+<!-- best.model.cliff.looic <- readRDS(paste0("RData/Richards_Cliff_",  -->
+<!--                                         model.names[[best.model.cliff.ID]], -->
+<!--                                         "_LOOIC.rds")) -->
+
+<!-- pareto_k_table(best.model.cliff.looic) -->
+
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- best.model.cliff <- readRDS(paste0("RData/Richards_Cliff_",  -->
+<!--                                    model.names[[best.model.cliff.ID]], -->
+<!--                                    ".rds")) -->
+
+<!-- model.names[[best.model.cliff.ID]] -->
+<!-- ``` -->
+
+<!-- ```{r} -->
+<!-- mcmc_trace(best.model.cliff$samples, c("K1", "K2")) -->
+<!-- ``` -->
 
 Not great but better than the others.
 
 ```{r}
-mcmc_trace(best.model.cliff$samples, "P")
+#mcmc_trace(best.model.cliff$samples, "P")
 ```
 
 This is a lot better. 
 
-So, I'll use Model 10 for computing the total deaths due to the heat related reasons.
+So, I'll use Model 26 for computing the total deaths due to the heat related reasons.
 
 ```{r}
 
-X_Cliff <- compute.summary.stats_St_K1_K2_P(samples = best.model.cliff$samples, 
-                                             seasons = seasons, 
-                                             total.days = max.days$total.days)
+X_Cliff <- compute.summary.stats_St_K(samples = best.model.cliff$samples, 
+                                      seasons = seasons, 
+                                      total.days = max.days$total.days,
+                                      P = jags.data.Cliff$P)
 
 ggplot() + 
   geom_path(data = X_Cliff$X.df,
@@ -609,6 +601,8 @@ The bulk of the analysis is done. So, convert this to a report. I decided not to
 2020-07-02
 Added Poisson models to both heat and cliff datasets. 
 
+2020-07-02 to 2020-07-03
+Added time-dependent sigmaY models. 
 Move to Report_Total_Deaths_Estimation.Rmd and its modifications (v2, v3) from here. 
 
 

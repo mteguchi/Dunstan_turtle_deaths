@@ -37,8 +37,8 @@ model{
   for (i in 1:n.seasons){   # year
     for (j in 1:n.vec[i]){   # days
       # state
-      M1[i, j] <- (1 + (2 * exp(K) - 1) * exp((1/(-S)) * (P[i] - t[i,j]))) ^ (-1/exp(K))
-      M2[i, j] <- (1 + (2 * exp(K) - 1) * exp((1/S) * (P[i] - t[i,j]))) ^ (-1/exp(K))
+      M1[i, j] <- (1 + (2 * exp(K) - 1) * exp((1/S1) * (P[i] - t[i,j]))) ^ (-1/exp(K))
+      M2[i, j] <- (1 + (2 * exp(K) - 1) * exp((1/S2) * (P[i] - t[i,j]))) ^ (-1/exp(K))
       X[i, j] <-  max[i] * (M1[i, j] * M2[i, j])
             
       # observation
@@ -59,7 +59,9 @@ model{
   }
 
   K ~ dnorm(0, 0.1)T(0,)
-  S ~ dnorm(0, 0.1)T(0,)
+  #S ~ dnorm(0, 0.1)T(0,)
+  S1 ~ dnorm(0, 0.1)T(,0)
+  S2 ~ dnorm(0, 0.1)T(0,)
   #tau.y.alpha ~ dnorm(0, 1)T(0,)
   #tau.y.beta ~ dnorm(0, 1)T(0,)
 

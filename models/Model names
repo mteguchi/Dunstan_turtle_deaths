@@ -2,36 +2,36 @@
 "St_K_norm", 
 "S_K1_K2_norm",
 "St_K1_K2_norm", 
-"S1_S2_K_norm", 
-"S1_S2_K1_K2_norm",
+"S1_S2_K_norm", z
+"S1_S2_K1_K2_norm", y
 "S_K_P_norm", 
 "St_K_P_norm", 
 "S_K1_K2_P_norm",
 "St_K1_K2_P_norm", 
-"S1_S2_K_P_norm", 
-"S1_S2_K1_K2_P_norm",
+"S1_S2_K_P_norm", z
+"S1_S2_K1_K2_P_norm", y
 "S_K_Pois", x
 "St_K_Pois", x
 "S_K1_K2_Pois", x
 "St_K1_K2_Pois", x 
-"S1_S2_K_Pois", x
-"S1_S2_K1_K2_Pois", x
+"S1_S2_K_Pois", x,z
+"S1_S2_K1_K2_Pois", x,y
 "S_K_P_Pois", x
 "St_K_P_Pois", x
 "S_K1_K2_P_Pois", x
 "St_K1_K2_P_Pois", x
-"S1_S2_K_P_Pois", x
-"S1_S2_K1_K2_P_Pois" x
+"S1_S2_K_P_Pois", x,z
+"S1_S2_K1_K2_P_Pois" x,y
 "S_K_sigmaYt_norm", x
 "St_K_sigmaYt_norm", x
 "S_K1_K2_sigmaYt_norm", x
 "St_K1_K2_sigmaYt_norm", x
-"S1_S2_K_sigmaYt_norm", x
-"S1_S2_K1_K2_sigmaYt_norm", x
+"S1_S2_K_sigmaYt_norm", x,z
+"S1_S2_K1_K2_sigmaYt_norm", x,y
 "S_K_P_sigmaYt_norm", x
 "St_K_P_sigmaYt_norm", x
 "S_K1_K2_P_sigmaYt_norm", x
 "St_K1_K2_P_sigmaYt_norm", x 
-"S1_S2_K_P_sigmaYt_norm", x
-"S1_S2_K1_K2_P_sigmaYt_norm", x
+"S1_S2_K_P_sigmaYt_norm", x,z
+"S1_S2_K1_K2_P_sigmaYt_norm", x, y
 
