@@ -530,7 +530,7 @@ mcmc_trace(best.model.cliff$samples, c("S[1]", "S[2]", "S[3]", "S[4]",
 ```
 
 
-```{rtrace_cliff2, echo=F, include=T}
+```{r trace_cliff2, echo=F, include=T}
 mcmc_trace(best.model.cliff$samples, c("S[10]", "S[11]", "S[12]", 
                                        "S[13]", "S[14]", "S[15]", 
                                        "S[16]", "S[17]", "S[18]"))
@@ -567,7 +567,7 @@ mcmc_trace(best.model.cliff$samples, c("sigma.y[19]", "sigma.y[20]", "sigma.y[21
 mcmc_trace(best.model.cliff$samples, "K")
 ```
 
-### MCMC trace plots of all parameters of the best model for heat-related deaths
+### MCMC density plots of all parameters of the best model for cliff-fall deaths
 
 ```{r density_cliff1, echo=F, include=T}
 mcmc_dens(best.model.cliff$samples, c("S[1]", "S[2]", "S[3]", "S[4]", 
