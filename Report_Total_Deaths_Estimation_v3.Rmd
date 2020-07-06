@@ -105,19 +105,16 @@ for (season_idx in 1:n.seasons){
   }
 }
 
-```
 
-Then send it to jags.
 
-```{r run_jags, include=FALSE, echo=FALSE, cache=TRUE}
 jags.data.Heat.P <- list(y = (obs.y.1[,,1]),
                          t = obs.t,
                          n.vec = n.vec,
                          n.seasons = n.seasons,
                          max.vec = max.mat[,1],
+                         N.mean = data.2$PI,
+                         N.SE = data.2$SE,
                          max.days = max.days$total.days)
-                         # N.mean.log = log(data.2$PI),
-                         # N.SE.log = log(data.2$SE))
 
 # jags.data.Heat.P.2 <- list(y = obs.y.1[1:19,,1],
 #                            t = obs.t[1:19, ],
@@ -128,30 +125,24 @@ jags.data.Heat.P <- list(y = (obs.y.1[,,1]),
 #                            N.SE = data.2$SE[1:19],
 #                            max.days = max.days$total.days)
 
-# I added sumXa in the code - calculate the season-sums within JAGS
-# This may be less efficient but good to get everything done in one.
-jags.params <- c("sigma.y", "S", "K1", "K2", "P", "max", 
-                  "sumXa", "y", "X", "sigma.max", "deviance", "loglik")
+jags.params <- c("sigma.y", "S", "K1", "K2", "P", "max", "prop", "N",
+                  "sumX", "y", "X", "sigma.max", "deviance", "loglik")
 
 MCMC.params <- list(n.chains = 4,
                     n.samples = 50000,
                     n.burnin = 10000,
                     n.thin = 5)
 
-if (!file.exists("RData/Heat_Richards_St_K1_K2_P_norm_sumX.rds")){
 jm <- jags(data = jags.data.Heat.P,
            inits = NULL,
            parameters.to.save= jags.params,
-           model.file = 'models/model_Richards_St_K1_K2_P_norm.txt',
+           model.file = 'models/model_Richards_St_K1_K2_P_norm_N.txt',
            n.chains = MCMC.params$n.chains,
            n.burnin = MCMC.params$n.burnin,
            n.thin = MCMC.params$n.thin,
            n.iter = MCMC.params$n.samples,
            DIC = T, parallel=T)
-  saveRDS(jm, "RData/Heat_Richards_St_K1_K2_P_norm_sumX.rds")
-}
   
-
 ```
 
 
@@ -165,7 +156,7 @@ In order to estimate the number of unobserved deaths from the two causes (i.e., 
 I used Model 10 to estimate the number of total heat-related deaths.
 
 ```{r Heat_M10_results, echo=F, cache=T, include=F}
-best.model.heat <- readRDS("RData/Heat_Richards_St_K1_K2_P_norm_sumX.rds")
+best.model.heat <- readRDS("RData/Richards_Heat_St_K1_K2_P_norm.rds")
 
 X_Heat <-
   compute.summary.stats_St_K1_K2_P(samples = best.model.heat$samples, 
