@@ -483,10 +483,10 @@ knitr::include_graphics("figures/prop_deaths_cliff.png")
 The total median cliff-fall deaths per season ranged from ```r ceiling(min(prop.cliff.deaths.summary.mod$total.med, na.rm = T))``` (season = ```r prop.cliff.deaths.summary.mod[prop.cliff.deaths.summary.mod$total.med == min(prop.cliff.deaths.summary.mod$total.med, na.rm = T), "Season"]```) to ```r ceiling(max(prop.cliff.deaths.summary.mod$total.med, na.rm = T))``` (season = ```r prop.cliff.deaths.summary.mod[prop.cliff.deaths.summary.mod$total.med == max(prop.cliff.deaths.summary.mod$total.med, na.rm = T), "Season"]```) (Table 2)
 
 ```{r cliff_death_table, echo=FALSE, include=TRUE}
-knitr::kable(prop.cliff.deaths.summary.mod %>% select(Season, total.low, total.med, total.high, Low, Med, High), 
-             digits =  c(1,1,1,1,2,2,2),
-             col.names = c("Season", "N (2.5%)", "N (50%)", "N (97.5%)", "P (2.5%)", "P (50%)", "P (97.5%)"),
-             caption = "Table 4. The estimated number of cliff-fall deaths of green turtles at Raine Island. N is the estimated number of deaths and P is the proportion of deaths relative to the total abundance")
+knitr::kable(prop.cliff.deaths.summary.mod %>% select(Season, total.low, total.med, total.high, Low, Med, High, PI, SE), 
+             digits =  c(1,1,1,1,2,2,2,2,2),
+             col.names = c("Season", "N (2.5%)", "N (50%)", "N (97.5%)", "P (2.5%)", "P (50%)", "P (97.5%)", "Nhat", "SE"),
+             caption = "Table 4. The estimated number of cliff-fall deaths of green turtles at Raine Island. N is the estimated number of deaths, P is the proportion of deaths relative to the total abundance, Nhat is the estimated abundance and SE is the SE of the estimated abundance.")
 ```
 
 
