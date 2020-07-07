@@ -19,7 +19,7 @@ library(jagsUI)
 library(bayesplot)
 library(loo)
 
-save.fig <- F
+save.fig <- T
 save.file <- F
 run.date <- "2020-07-04"
 
@@ -426,16 +426,40 @@ p.cliff.total <- ggplot(data = total.deaths.cliff) +
         legend.position = c(0.8, 0.8)) + 
   labs(x = "Total abundance", y = "Total cliff-fall deaths")
   
-if (save.fig)
+p.cliff.total.log <- ggplot(data = total.deaths.cliff) + 
+  geom_errorbar(aes(x = log(PI), ymin = log(total.low), ymax = log(total.high))) +
+  geom_errorbarh(aes(y = log(total.med), xmin = log(PI - 2*SE), xmax = log(PI + 2*SE))) +
+  geom_point(aes(x = log(PI), y = log(total.med), color = as.factor(Pre2012)),
+             size = 2) +
+  scale_color_manual(labels = c("2012 - 2019", "pre 2012"),
+                     values = c("0" = "blue",
+                                "1" = "gold")) + 
+  theme(legend.title = element_blank(),
+        legend.position = c(0.8, 0.2)) + 
+  labs(x = "ln(Total abundance)", 
+       y = "ln(Total cliff-fall deaths)")
+
+
+if (save.fig){  
   ggsave(p.cliff.total, filename = "figures/NvsDeaths_Cliff.png", 
          dpi = 600, device = "png")
+  ggsave(p.cliff.total.log, filename = "figures/log_NvsDeaths_Cliff.png", 
+         dpi = 600, device = "png")
+   
+}
+
 ```
 
 
-```{r plot_NvsDeaths_cliff, echo=FALSE, cache=TRUE, fig.cap = "Figure 6. The relationship between estimated total abundance of female green turtles and total cliff-fall deaths. Eror bars indicate the 95% CIs."}
+```{r plot_NvsDeaths_cliff, echo=FALSE, cache=TRUE, fig.cap = "Figure 6a. The relationship between estimated total abundance of female green turtles and total cliff-fall deaths. Error bars indicate approximate 95% CIs."}
 knitr::include_graphics( "figures/NvsDeaths_Cliff.png")
 ```
 
+
+
+```{r plot_logN_vs_logDeaths_cliff, echo=FALSE, cache=TRUE, fig.cap = "Figure 6b. The relationship between estimated total abundance of female green turtles and total cliff-fall deaths in the natural log scale. Error bars indicate approximate 95% CIs."}
+knitr::include_graphics( "figures/log_NvsDeaths_Cliff.png")
+```
 
 ```{r prop_cliff_deaths, cache=T, include=F, echo=F}
 prop.cliff.deaths <- vector(mode = "list", length = n.seasons)
@@ -469,12 +493,23 @@ p.prop.cliff <- ggplot() +
               alpha = 0.4) + 
   labs(x = "Season", y = "Proportion of cliff-fall deaths")
 
-if (save.fig)
-  ggsave(filename = "figures/prop_deaths_cliff.png", plot = p.prop.cliff,
+p.deaths.timeseries <- ggplot(data = prop.cliff.deaths.summary.mod) + 
+  geom_ribbon(aes(x = Season, ymin = total.low, ymax = total.high),
+              alpha = 0.5, fill = "gold") +
+  geom_path(aes(x = Season, y = total.med))
+
+if (save.fig){  
+  ggsave(filename = "figures/prop_deaths_cliff.png", 
+         plot = p.prop.cliff,
          device = "png", dpi = 600)
+  
+  ggsave(filename = "figures/deaths_timeseries.png", 
+         plot = p.deaths.timeseries,
+         device = "png", dpi = 600)
+}
 ```
 
-The median proportion of cliff-fall deaths relative to the total abundance ranged from ```r signif(min(prop.cliff.deaths.summary$Med, na.omit = T), 3)``` to ```r signif(max(prop.cliff.deaths.summary$Med, na.rm = T), 3)``` (Figure 4). Their 95% CIs ranged from ```r  signif(min(prop.cliff.deaths.summary.mod$Low, na.rm = T), 3)```  to ```r signif(max(prop.cliff.deaths.summary$High, na.rm = T), 3)```.
+The median proportion of cliff-fall deaths relative to the total abundance ranged from ```r signif(min(prop.cliff.deaths.summary$Med, na.rm = T), 3)``` to ```r signif(max(prop.cliff.deaths.summary$Med, na.rm = T), 3)``` (Figure 4). Their 95% CIs ranged from ```r  signif(min(prop.cliff.deaths.summary.mod$Low, na.rm = T), 3)```  to ```r signif(max(prop.cliff.deaths.summary$High, na.rm = T), 3)```.
 
 ```{r plot_prop_cliff, echo=FALSE, cache=TRUE, fig.cap = "Figure 7. Changes in proportion of cliff-fall deaths over time. Gray band indicates approximate 95% CIs."}
 knitr::include_graphics("figures/prop_deaths_cliff.png")
@@ -488,6 +523,126 @@ knitr::kable(prop.cliff.deaths.summary.mod %>% select(Season, total.low, total.m
              col.names = c("Season", "N (2.5%)", "N (50%)", "N (97.5%)", "P (2.5%)", "P (50%)", "P (97.5%)", "Nhat", "SE"),
              caption = "Table 4. The estimated number of cliff-fall deaths of green turtles at Raine Island. N is the estimated number of deaths, P is the proportion of deaths relative to the total abundance, Nhat is the estimated abundance and SE is the SE of the estimated abundance.")
 ```
+
+```{r plot_cliff_fall_timeseries, echo=FALSE, cache=TRUE, fig.cap = "Figure 7. Chagne in the number of cliff-fall deaths. Error bars indicate approximate 95% CIs."}
+knitr::include_graphics( "figures/deaths_timeseries.png")
+```
+
+One way to make an inference on how many turtles could have died had it not been for the fending is to look at the relationship between the number of deaths and total number of females and see if the observed deaths since the fence installation is below the expected numbers. Because the total number of females was also estimated with uncertainties, we need to do some tweaking. Here is one way to do it.
+
+1. Randomly draw abundance from each year prior to 2012 from normal distributions (mean +/- SE).
+
+2. Randomly draw total deaths from each year prior to 2012 using the joint posterior distribution
+
+3. Conduct a regression analysis to estimate slope (set the intercept to zero)
+
+4. Repeat the above analysis many times, say 1000 times, to obtain a distribution of slopes
+
+5. For each year from 2012, also find a distribution of slopes.
+
+6. Compare the two distributions of the slopes - if those from after 2011 has smaller slope on average, then we conclude that the fencing reduced the deaths
+
+A bit ad-hoc but I can't think of other ways to figure this out... 
+
+Just using the log(median) and log(mean), linear models fit very well to before and after fencing (r2 = 0.9 and 0.97, respectively) but there is no statistical difference in slopes. 
+
+```{r lm_pre2012, echo=F, include=T, cache=T}
+pre2012 <- prop.cliff.deaths.summary.mod %>% filter(Season < 2012) %>% na.omit()
+lm.pre2012 <- lm(log(total.med) ~ log(PI) -1, data = pre2012)
+
+summary(lm.pre2012)
+```
+
+Post fencing linear model results:
+```{r lm_post2011, echo=F, include=T, cache=T}
+post2011 <- prop.cliff.deaths.summary.mod %>% filter(Season >= 2012)
+lm.post2011 <- lm(log(total.med) ~ log(PI) -1, data = post2011)
+summary(lm.post2011)
+```
+
+I don't expect this to change when I do resampling but just to make sure...
+
+pre- vs. post-fencing periods
+```{r pre_post_fencing, echo=F, cache=T, include=F}
+
+n.resampling <- 10000
+
+slopes.post <- slopes.pre <- vector(mode = "numeric", length = n.resampling)
+
+# list2DF generates 32000 obs. of 24 variables - remove those years without PIs
+X_Cliff2 <- list2DF(X_Cliff$X.season.sums)[, which(!is.na(prop.cliff.deaths.summary.mod$PI))]
+X_Cliff2.pre <- X_Cliff2[, 1:nrow(pre2012)]
+X_Cliff2.post <- X_Cliff2[, (nrow(pre2012)+1):ncol(X_Cliff2)]
+
+i <- 1
+for (i in 1:n.resampling){
+  tmp.data.pre <- data.frame(PI= rnorm(n = length(pre2012$PI), 
+                                       mean = pre2012$PI, 
+                                       sd = pre2012$SE),
+                             deaths = as.vector(t(X_Cliff2.pre[i,])))
+  
+  tmp.data.pre$PI[which(tmp.data.pre$PI <= 0)] <- 1
+  
+  fit.1 <- lm(log(deaths) ~ log(PI) - 1, data = tmp.data.pre)
+  slopes.pre[i] <- coefficients(fit.1)
+  
+  tmp.data.post <- data.frame(PI= rnorm(n = length(post2011$PI), 
+                                        mean = post2011$PI, 
+                                        sd = post2011$SE),
+                              deaths = as.vector(t(X_Cliff2.post[i,])))
+  
+  tmp.data.post$PI[which(tmp.data.post$PI <= 0)] <- 1
+  
+  fit.2 <- lm(log(deaths) ~ log(PI) - 1, data = tmp.data.post)
+  slopes.post[i] <- coefficients(fit.2)
+}
+
+slope.pre.post.df <- data.frame(pre.post = rep(c("1995-2011", "2012-2019"), each = n.resampling),
+                                slope = c(slopes.pre, slopes.post))  
+#  mutate(pre.post.f = factor(pre.post, levels = c("pre", "post")))
+
+#facet.labels <- list("pre" = "1995-2011", 
+                     #"post" = "2012-2019")
+
+p.pre.vs.post <- ggplot(data = slope.pre.post.df) +
+  geom_histogram(aes(x = slope, y = ..density..),
+                 fill = "darkblue",
+                 #alpha = 0.3,
+                 color = "black") +
+  # geom_density(aes(x = slope),
+  #              color = "darkblue", size = 2) + 
+  facet_grid(pre.post ~.)
+
+if (save.fig)
+  ggsave(plot = p.pre.vs.post, filename = "figures/pre_vs_post_slopes.png",
+         device = "png", dpi = 600, width = 6, height = 3.76)
+
+```
+
+
+```{r plot_cliff_slopes, echo=FALSE, cache=TRUE, fig.cap = "Figure 8. Chagne in distributions of linear-regression slopes for pre- and post-fencing installation. Slopes were computed from 10000 randomly drawn abundance and deats from normal distributions (abundance) and the joint posterior distribution of total deaths."}
+knitr::include_graphics( "figures/pre_vs_post_slopes.png")
+```
+
+
+Look at statistics of each time period: 
+
+```{r slope_stats_pre, echo = F, include=T}
+slope.pre.post.df %>% 
+           filter(pre.post == "1995-2011") %>% 
+           select("slope") -> tmp
+quantile(tmp$slope, c(0.025, 0.5, 0.975))
+```
+
+
+```{r slope_stats_post, echo = F, include=T}
+slope.pre.post.df %>% 
+           filter(pre.post == "2012-2019") %>% 
+           select("slope") -> tmp
+quantile(tmp$slope, c(0.025, 0.5, 0.975))
+```
+
+So, not "significant" at 5% level, i.e., the 97.5 percentile of the post-fencing period (0.50) is greater than the 2.5 percentile of the pre-fencing period (0.47), there is a sign of possible reduction in the deaths-abundance relationship. 
 
 
 ## Appendix
